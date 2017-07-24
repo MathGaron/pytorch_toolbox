@@ -6,10 +6,14 @@
     - Supports multiple outputs
 
 """
+import shutil
+
 from pytorch_toolbox.utils import AverageMeter
 import time
 import torch
 from tqdm import tqdm
+import numpy as np
+import os
 
 
 class TrainLoop:
@@ -151,7 +155,7 @@ class TrainLoop:
         scores = []
         for i in range(len(self.prediction_callbacks)):
             scores.append(AverageMeter())
-            
+
         self.model.eval()
 
         end = time.time()
@@ -175,3 +179,52 @@ class TrainLoop:
             print('\t || Acc {}: {:.3f}'.format(i, acc.avg))
 
         return losses, scores
+
+    @staticmethod
+    def save_checkpoint(state, is_best, path="", filename='checkpoint.pth.tar'):
+        file_path = os.path.join(path, filename)
+        torch.save(state, file_path)
+        if is_best:
+            print("Save best checkpoint...")
+            shutil.copyfile(file_path, os.path.join(path, 'model_best.pth.tar'))
+
+    def loop(self, epochs_qty, output_path):
+        """
+        Training loop for n epoch.
+        todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
+        :param epochs_qty:
+        :param output_path:
+        :return:
+        """
+        best_prec1 = 65000
+        train_plot_data = np.zeros((epochs_qty, len(self.criterions)))
+        valid_plot_data = np.zeros((epochs_qty, len(self.criterions)))
+        loss_plot_data = np.zeros((epochs_qty, 2))
+
+        for epoch in range(epochs_qty):
+            print("-" * 20)
+            print(" * EPOCH : {}".format(epoch))
+
+            train_loss, train_scores = self.train()
+            val_loss, valid_scores = self.validate()
+
+            loss_plot_data[epoch, 0] = train_loss.avg
+            loss_plot_data[epoch, 1] = val_loss.avg
+            validation_loss_average = val_loss.avg
+
+            for i, score in enumerate(train_scores):
+                train_plot_data[epoch, i] = score.avg
+
+            for i, score in enumerate(valid_scores):
+                valid_plot_data[epoch, i] = score.avg
+            # remember best loss and save checkpoint
+            is_best = validation_loss_average < best_prec1
+            best_prec1 = min(validation_loss_average, best_prec1)
+            self.save_checkpoint({
+                'epoch': epoch + 1,
+                'state_dict': self.model.state_dict(),
+                'best_prec1': best_prec1,
+            }, is_best, output_path, "checkpoint.pth.tar")
+            np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
+            np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
+            np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")

@@ -1,5 +1,7 @@
 # Description
 Simple classification example using pytorch_toolbox for Kaggle's cat vs dog dataset
+This simple example is there to show how to use the train loop, how to define a data loader and how
+to define a network architecture.
 
 # Dataset
 Download Dataset from : https://www.kaggle.com/c/dogs-vs-cats/download/train.zip

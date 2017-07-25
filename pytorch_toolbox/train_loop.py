@@ -126,7 +126,7 @@ class TrainLoop:
             data_time.update(time.time() - end)
             if not isinstance(target, list):
                 target = [target.view(-1)]
-            data, target = self.setup_loaded_data(data, target)
+            data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target)
             y_pred = self.predict(data_var)
             loss = self.compute_loss(y_pred, target_var)
@@ -162,7 +162,7 @@ class TrainLoop:
         for i, (data, target) in enumerate(self.valid_data):
             if not isinstance(target, list):
                 target = [target.view(-1)]
-            data, target = self.setup_loaded_data(data, target)
+            data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target)
             y_pred = self.predict(data_var)
             loss = self.compute_loss(y_pred, target_var)
@@ -200,6 +200,9 @@ class TrainLoop:
         train_plot_data = np.zeros((epochs_qty, len(self.criterions)))
         valid_plot_data = np.zeros((epochs_qty, len(self.criterions)))
         loss_plot_data = np.zeros((epochs_qty, 2))
+
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
 
         for epoch in range(epochs_qty):
             print("-" * 20)

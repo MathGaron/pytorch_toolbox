@@ -14,3 +14,7 @@ General tools for using pytorch :
 - [pytorch](http://pytorch.org/)
 
 `conda install pytorch torchvision -c soumith`
+
+- [skimage](https://anaconda.org/anaconda/scikit-image)
+
+`conda install -c anaconda scikit-image `

@@ -54,8 +54,9 @@ if __name__ == '__main__':
     #
     model = CatVSDogNet()
     loader_class = CatVsDogLoader
-    criterion = [nn.NLLLoss()]
-    callbacks = [classification_accuracy_callback]
+    criterion = [nn.NLLLoss()]                      # Here we just want a classification loss for the signle output
+    callbacks = [classification_accuracy_callback]  # Here we add a callback that will use the predictions and targets
+                                                    # and compute the % prediction accuracy
 
     # Here we use the following transformations:
     # ToTensor = convert numpy to torch tensor (in float value between 0 and 1.0
@@ -71,6 +72,9 @@ if __name__ == '__main__':
 
     train_dataset = loader_class(os.path.join(data_path, "train"), transformations)
     valid_dataset = loader_class(os.path.join(data_path, "valid"), transformations)
+
+    # Instantiate the data loader needed for the train loop. These use dataset object to build random minibatch
+    # on multiple cpu core
     train_loader = data.DataLoader(train_dataset,
                                    batch_size=batch_size,
                                    shuffle=True,
@@ -85,6 +89,7 @@ if __name__ == '__main__':
                                  pin_memory=use_shared_memory,
                                  )
 
+    # Instantiate the train loop and train the model.
     train_loop_handler = TrainLoop(model, train_loader, val_loader, criterion, optimizer, backend)
     train_loop_handler.add_prediction_callback(callbacks)
     train_loop_handler.loop(epochs, output_path)

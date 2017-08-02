@@ -18,6 +18,18 @@ import os
 
 class TrainLoop:
     def __init__(self, model, train_data_loader, valid_data_loader, criterions, optimizer, backend):
+        """
+        See examples/classification/train.py for usage
+
+        :param model:               Any nn.module (it is the network model to train)
+        :param train_data_loader:   Any torch dataloader for training data
+        :param valid_data_loader:   Any torch dataloader for validation data
+        :param criterions:          List of Criterions (nn.module) depending on the number of outputs of
+                                    the network [criterion1, criterion2, ...]
+                                    #TODO Does not handle n criterions per output...
+        :param optimizer:           Any torch optimizer
+        :param backend:             cuda | cpu
+        """
         self.train_data = train_data_loader
         self.valid_data = valid_data_loader
         self.criterions = criterions
@@ -89,6 +101,13 @@ class TrainLoop:
         return y_pred
 
     def compute_loss(self, predictions, target_variable):
+        """
+        Compute the criterion w.r.t output and target list
+
+        :param predictions:     list of network outputs
+        :param target_variable: list of targets
+        :return:
+        """
         loss = None
         for i, crit in enumerate(self.criterions):
             if loss is None:
@@ -101,6 +120,10 @@ class TrainLoop:
         """
         add a prediction callback that takes as input the predictions and targets and return
         a score that will be displayed
+
+        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
+                minibatch iterations.
+
         :param func:
         :return:
         """
@@ -111,6 +134,15 @@ class TrainLoop:
             self.prediction_callbacks.append(func)
 
     def train(self):
+        """
+        Minibatch loop for training. Will iterate through the whole dataset and backprop for every minibatch
+
+        It will keep an average of the computed losses and every score obtained with the user's callbacks.
+
+        The information is displayed on the console
+
+        :return: averageloss, [averagescore1, averagescore2, ...]
+        """
         batch_time = AverageMeter()
         data_time = AverageMeter()
         losses = AverageMeter()
@@ -150,6 +182,15 @@ class TrainLoop:
         return losses, scores
 
     def validate(self):
+        """
+        Validation loop (refer to train())
+
+        Only difference is that there is no backpropagation..
+
+        #TODO: It repeats mostly train()'s code...
+
+        :return:
+        """
         batch_time = AverageMeter()
         losses = AverageMeter()
         scores = []
@@ -182,6 +223,14 @@ class TrainLoop:
 
     @staticmethod
     def save_checkpoint(state, is_best, path="", filename='checkpoint.pth.tar'):
+        """
+        Helper function to save models's parameters
+        :param state:   dict with metadata and models's weight
+        :param is_best: bool
+        :param path:    save path
+        :param filename:
+        :return:
+        """
         file_path = os.path.join(path, filename)
         torch.save(state, file_path)
         if is_best:

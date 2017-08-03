@@ -1,8 +1,9 @@
 import torch.nn.functional as F
 import torch.nn as nn
+from pytorch_toolbox.network.network_base import NetworkBase
 
 
-class CatVSDogNet(nn.Module):
+class CatVSDogNet(NetworkBase):
     def __init__(self):
         super(CatVSDogNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 24, 5)
@@ -33,3 +34,6 @@ class CatVSDogNet(nn.Module):
         x = F.dropout(x)
         x = F.log_softmax(self.fc2(x))
         return x
+
+    def loss(self, predictions, targets):
+        pass

@@ -5,6 +5,16 @@ General tools for using pytorch :
 - Visualization tools
 
 ## Dependencies 
-- pyyaml
-- tqdm
-- pytorch
+- [pyyaml](https://anaconda.org/anaconda/pyyaml)
+
+`conda install -c anaconda pyyaml`
+- [tqdm](https://anaconda.org/conda-forge/tqdm)
+
+`conda install -c conda-forge tqdm`
+- [pytorch](http://pytorch.org/)
+
+`conda install pytorch torchvision -c soumith`
+
+- [skimage](https://anaconda.org/anaconda/scikit-image)
+
+`conda install -c anaconda scikit-image `

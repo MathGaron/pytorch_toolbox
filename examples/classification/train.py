@@ -54,7 +54,6 @@ if __name__ == '__main__':
     #
     model = CatVSDogNet()
     loader_class = CatVsDogLoader
-    criterion = [nn.NLLLoss()]                      # Here we just want a classification loss for the signal output
     callbacks = [classification_accuracy_callback]  # Here we add a callback that will use the predictions and targets
                                                     # and compute the % prediction accuracy
 
@@ -90,7 +89,7 @@ if __name__ == '__main__':
                                  )
 
     # Instantiate the train loop and train the model.
-    train_loop_handler = TrainLoop(model, train_loader, val_loader, criterion, optimizer, backend)
+    train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend)
     train_loop_handler.add_prediction_callback(callbacks)
     train_loop_handler.loop(epochs, output_path)
 

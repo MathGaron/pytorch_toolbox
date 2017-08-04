@@ -17,22 +17,18 @@ import os
 
 
 class TrainLoop:
-    def __init__(self, model, train_data_loader, valid_data_loader, criterions, optimizer, backend):
+    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend):
         """
         See examples/classification/train.py for usage
 
-        :param model:               Any nn.module (it is the network model to train)
+        :param model:               Any NetworkBase (in pytorch_toolbox.network) (it is the network model to train)
         :param train_data_loader:   Any torch dataloader for training data
         :param valid_data_loader:   Any torch dataloader for validation data
-        :param criterions:          List of Criterions (nn.module) depending on the number of outputs of
-                                    the network [criterion1, criterion2, ...]
-                                    #TODO Does not handle n criterions per output...
         :param optimizer:           Any torch optimizer
         :param backend:             cuda | cpu
         """
         self.train_data = train_data_loader
         self.valid_data = valid_data_loader
-        self.criterions = criterions
         self.optim = optimizer
         self.backend = backend
         self.model = model
@@ -41,8 +37,6 @@ class TrainLoop:
 
         if backend == "cuda":
             self.model = self.model.cuda()
-            for i in range(len(self.criterions)):
-                self.criterions[i] = self.criterions[i].cuda()
 
     @staticmethod
     def setup_loaded_data(data, target, backend):
@@ -100,22 +94,6 @@ class TrainLoop:
             y_pred = (y_pred,)
         return y_pred
 
-    def compute_loss(self, predictions, target_variable):
-        """
-        Compute the criterion w.r.t output and target list
-
-        :param predictions:     list of network outputs
-        :param target_variable: list of targets
-        :return:
-        """
-        loss = None
-        for i, crit in enumerate(self.criterions):
-            if loss is None:
-                loss = crit(predictions[i], target_variable[i])
-            else:
-                loss += crit(predictions[i], target_variable[i])
-        return loss
-
     def add_prediction_callback(self, func):
         """
         add a prediction callback that takes as input the predictions and targets and return
@@ -161,7 +139,7 @@ class TrainLoop:
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target)
             y_pred = self.predict(data_var)
-            loss = self.compute_loss(y_pred, target_var)
+            loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
             for callback, acc in zip(self.prediction_callbacks, scores):
@@ -206,7 +184,7 @@ class TrainLoop:
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target)
             y_pred = self.predict(data_var)
-            loss = self.compute_loss(y_pred, target_var)
+            loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
             for callback, acc in zip(self.prediction_callbacks, scores):
@@ -246,8 +224,8 @@ class TrainLoop:
         :return:
         """
         best_prec1 = 65000
-        train_plot_data = np.zeros((epochs_qty, len(self.criterions)))
-        valid_plot_data = np.zeros((epochs_qty, len(self.criterions)))
+        train_plot_data = None
+        valid_plot_data = None
         loss_plot_data = np.zeros((epochs_qty, 2))
 
         if not os.path.exists(output_path):
@@ -263,6 +241,10 @@ class TrainLoop:
             loss_plot_data[epoch, 0] = train_loss.avg
             loss_plot_data[epoch, 1] = val_loss.avg
             validation_loss_average = val_loss.avg
+
+            if train_plot_data is None or valid_plot_data is None:
+                train_plot_data = np.zeros((epochs_qty, len(train_scores)))
+                valid_plot_data = np.zeros((epochs_qty, len(valid_scores)))
 
             for i, score in enumerate(train_scores):
                 train_plot_data[epoch, i] = score.avg

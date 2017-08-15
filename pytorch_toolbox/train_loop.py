@@ -215,6 +215,21 @@ class TrainLoop:
             print("Save best checkpoint...")
             shutil.copyfile(file_path, os.path.join(path, 'model_best.pth.tar'))
 
+    @staticmethod
+    def load_model(path="", filename='model_best.pth.tar'):
+        """
+        Helper function to load models's parameters
+        :param state:   dict with metadata and models's weight
+        :param path:    load path
+        :param filename:
+        :return:
+        """
+        file_path = os.path.join(path, filename)
+        print("Loading best model...")
+        state = torch.load(file_path)
+
+        return state
+
     def loop(self, epochs_qty, output_path):
         """
         Training loop for n epoch.
@@ -230,6 +245,8 @@ class TrainLoop:
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+        else:
+            self.model.load_state_dict(self.load_model(output_path)['state_dict'])
 
         for epoch in range(epochs_qty):
             print("-" * 20)
@@ -258,7 +275,7 @@ class TrainLoop:
                 'epoch': epoch + 1,
                 'state_dict': self.model.state_dict(),
                 'best_prec1': best_prec1,
-            }, is_best, output_path, "checkpoint.pth.tar")
+            }, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
             np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
             np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
             np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")

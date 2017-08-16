@@ -9,6 +9,7 @@
 import shutil
 
 from pytorch_toolbox.utils import AverageMeter
+from pytorch_toolbox.visualization import Visualization
 import time
 import torch
 from tqdm import tqdm
@@ -125,6 +126,7 @@ class TrainLoop:
         data_time = AverageMeter()
         losses = AverageMeter()
         end = time.time()
+        vis = Visualization()
 
         self.model.train()
 
@@ -141,6 +143,7 @@ class TrainLoop:
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
+            vis.visualize(loss.data[0], 'loss')
 
             for callback, acc in zip(self.prediction_callbacks, scores):
                 score = callback(y_pred, target)
@@ -227,6 +230,7 @@ class TrainLoop:
         train_plot_data = None
         valid_plot_data = None
         loss_plot_data = np.zeros((epochs_qty, 2))
+
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)

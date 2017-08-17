@@ -62,6 +62,8 @@ if __name__ == '__main__':
     # Normalize = with respect to imagenet parameters
     imagenet_mean = [123, 116, 103]
     imagenet_std = [58, 57, 57]
+    # transfformations are a series of transform to pass to the input data. Here we have to build a list of
+    # transforms for each inputs to the network's forward call
     transformations = [dt.Compose([dt.Resize((128, 128)),
                                    dt.ToFloat(),
                                    dt.NumpyImage2Tensor(),

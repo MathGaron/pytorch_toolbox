@@ -23,6 +23,9 @@ class CatVSDogNet(NetworkBase):
         self.fc_bn1 = nn.BatchNorm1d(250)
         self.fc2 = nn.Linear(250, 2)
 
+        self.dropout1 = nn.Dropout()
+        self.dropout2 = nn.Dropout()
+
         self.criterion = nn.NLLLoss()
 
     def forward(self, x):
@@ -31,9 +34,9 @@ class CatVSDogNet(NetworkBase):
         x = self.dropout3(F.max_pool2d(F.elu(self.conv3_bn(self.conv3(x))), 2))
         x = F.max_pool2d(F.elu(self.conv4_bn(self.conv4(x))), 2)
         x = x.view(-1, self.view_size)
-        x = F.dropout(x)
+        x = self.dropout1(x)
         x = F.elu(self.fc_bn1(self.fc1(x)))
-        x = F.dropout(x)
+        x = self.dropout2(x)
         x = F.log_softmax(self.fc2(x))
         return x
 

@@ -66,7 +66,7 @@ class TrainLoop:
         return data, target
 
     @staticmethod
-    def to_autograd(data, target, istrain=True):
+    def to_autograd(data, target, istest=True):
         """
         Converts data and target to autograd Variable
         :param data:
@@ -76,9 +76,9 @@ class TrainLoop:
         target_var = []
         data_var = []
         for i in range(len(data)):
-            data_var.append(torch.autograd.Variable(data[i], volatile=istrain))
+            data_var.append(torch.autograd.Variable(data[i], volatile=istest))
         for i in range(len(target)):
-            target_var.append(torch.autograd.Variable(target[i], volatile=istrain))
+            target_var.append(torch.autograd.Variable(target[i], volatile=istest))
         if len(data_var) == 1:
             data_var = data_var[0]
         return data_var, target_var
@@ -137,7 +137,7 @@ class TrainLoop:
             if not isinstance(target, list):
                 target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, istrain=True)
+            data_var, target_var = self.to_autograd(data, target, istest=False)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
@@ -182,7 +182,7 @@ class TrainLoop:
             if not isinstance(target, list):
                 target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, istrain=False)
+            data_var, target_var = self.to_autograd(data, target, istest=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))

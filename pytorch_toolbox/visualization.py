@@ -3,7 +3,6 @@ The visualization class provides an easy access to some of the visdom functional
 Accept as input a number that will be ploted over time or an image of type np.ndarray
 '''
 
-import visdom
 from visdom import Visdom
 import numpy as np
 import numbers
@@ -22,7 +21,7 @@ class Visualization:
     @classmethod
     def visualize(cls, item, name):
         cls.iterator += 1
-        if(name not in cls.items_to_visualize):
+        if name not in cls.items_to_visualize:
             cls.new_item(item, name)
         else:
             cls.update_item(item, name)
@@ -30,13 +29,13 @@ class Visualization:
 
     @classmethod
     def new_item(cls, item, name):
-        if (isinstance(item, numbers.Number)):
+        if isinstance(item, numbers.Number):
             win = cls.vis.line(
                 X=np.array([cls.iterator, cls.iterator]),
                 Y=np.array([item, item])
             )
             cls.windows[name] = win
-        elif (isinstance(item, np.ndarray)):
+        elif isinstance(item, np.ndarray):
             win = cls.vis.image(
                 item,
                 opts=dict(title=name, caption=name),
@@ -47,13 +46,13 @@ class Visualization:
 
     @classmethod
     def update_item(cls, item, name):
-        if (isinstance(item, numbers.Number)):
+        if isinstance(item, numbers.Number):
             cls.vis.updateTrace(
                 X=np.array([cls.iterator-1, cls.iterator]),
                 Y=np.array([cls.items_to_visualize[name], item]),
                 win=cls.windows[name]
             )
-        elif (isinstance(item, np.ndarray)):
+        elif isinstance(item, np.ndarray):
             cls.vis.image(
                 item,
                 opts=dict(title=name, caption=name),

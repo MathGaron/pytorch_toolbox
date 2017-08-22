@@ -67,7 +67,7 @@ class TrainLoop:
         return data, target
 
     @staticmethod
-    def to_autograd(data, target):
+    def to_autograd(data, target, istest=True):
         """
         Converts data and target to autograd Variable
         :param data:
@@ -77,9 +77,9 @@ class TrainLoop:
         target_var = []
         data_var = []
         for i in range(len(data)):
-            data_var.append(torch.autograd.Variable(data[i]))
+            data_var.append(torch.autograd.Variable(data[i], volatile=istest))
         for i in range(len(target)):
-            target_var.append(torch.autograd.Variable(target[i]))
+            target_var.append(torch.autograd.Variable(target[i], volatile=istest))
         if len(data_var) == 1:
             data_var = data_var[0]
         return data_var, target_var
@@ -139,7 +139,7 @@ class TrainLoop:
             if not isinstance(target, list):
                 target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target)
+            data_var, target_var = self.to_autograd(data, target, istest=False)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
@@ -185,7 +185,7 @@ class TrainLoop:
             if not isinstance(target, list):
                 target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target)
+            data_var, target_var = self.to_autograd(data, target, istest=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
@@ -218,12 +218,28 @@ class TrainLoop:
             print("Save best checkpoint...")
             shutil.copyfile(file_path, os.path.join(path, 'model_best.pth.tar'))
 
-    def loop(self, epochs_qty, output_path):
+    @staticmethod
+    def load_checkpoint(path="", filename='model_best.pth.tar'):
+        """
+        Helper function to load models's parameters
+        :param state:   dict with metadata and models's weight
+        :param path:    load path
+        :param filename:
+        :return:
+        """
+        file_path = os.path.join(path, filename)
+        print("Loading best model...")
+        state = torch.load(file_path)
+
+        return state
+
+    def loop(self, epochs_qty, output_path, load_checkpoint=False):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
-        :param epochs_qty:
-        :param output_path:
+        :param load_checkpoint:  If true, will check for model_best.pth.tar in output path and load it.
+        :param epochs_qty:       Number of epoch to train
+        :param output_path:      Path to save the model and log data
         :return:
         """
         best_prec1 = 65000
@@ -234,6 +250,13 @@ class TrainLoop:
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+
+        if load_checkpoint:
+            model_name = 'model_best.pth.tar'
+            if os.path.exists(os.path.join(output_path, model_name)):
+                self.model.load_state_dict(self.load_checkpoint(output_path, model_name)['state_dict'])
+            else:
+                raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
         for epoch in range(epochs_qty):
             print("-" * 20)
@@ -262,7 +285,7 @@ class TrainLoop:
                 'epoch': epoch + 1,
                 'state_dict': self.model.state_dict(),
                 'best_prec1': best_prec1,
-            }, is_best, output_path, "checkpoint.pth.tar")
+            }, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
             np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
             np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
             np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")

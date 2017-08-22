@@ -5,12 +5,12 @@ from abc import ABCMeta, abstractmethod
 class LoaderBase(Dataset):
     __metaclass__ = ABCMeta
 
-    def __init__(self, root, transform=None, target_transform=None):
+    def __init__(self, root, data_transforms=[], target_transforms=[]):
         imgs = self.make_dataset(root)
         self.root = root
         self.imgs = imgs
-        self.transform = transform
-        self.target_transform = target_transform
+        self.data_transforms = data_transforms
+        self.target_transforms = target_transforms
 
     @abstractmethod
     def make_dataset(self, dir):
@@ -36,12 +36,12 @@ class LoaderBase(Dataset):
         if not isinstance(data, list):
             data = [data]
 
-        if self.transform is not None:
-            for i in range(len(data)):
-                data[i] = self.transform[i](data[i])
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
+        for i, transform in enumerate(self.data_transforms):
+            if transform is not None:
+                data[i] = transform(data[i])
+        for i, transform in enumerate(self.target_transforms):
+            if transform is not None:
+                target[i] = transform(target[i])
         return data, target
 
     def __len__(self):

@@ -42,7 +42,7 @@ class Visualization:
             )
             cls.windows[name] = win
         else:
-            print("type not supported for visualization")
+            print("type {} not supported for visualization".format(type(item)))
 
     @classmethod
     def update_item(cls, item, name):

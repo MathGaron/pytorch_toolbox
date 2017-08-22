@@ -8,7 +8,7 @@ import numpy as np
 import numbers
 
 
-class Visualization:
+class VisdomHandler:
 
     items_to_visualize = {}
     windows = {}
@@ -32,7 +32,8 @@ class Visualization:
         if isinstance(item, numbers.Number):
             win = cls.vis.line(
                 X=np.array([cls.iterator, cls.iterator]),
-                Y=np.array([item, item])
+                Y=np.array([item, item]),
+                opts=dict(title=name)
             )
             cls.windows[name] = win
         elif isinstance(item, np.ndarray):

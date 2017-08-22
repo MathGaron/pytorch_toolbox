@@ -11,6 +11,7 @@ from pytorch_toolbox.io import yaml_loader
 from pytorch_toolbox.utils import classification_accuracy
 from pytorch_toolbox.train_loop import TrainLoop
 import pytorch_toolbox.data_transforms as dt
+from pytorch_toolbox.visualization.epoch_callbacks import visdom_print, console_print
 
 
 def classification_accuracy_callback(prediction, target):
@@ -54,8 +55,6 @@ if __name__ == '__main__':
     #
     model = CatVSDogNet()
     loader_class = CatVsDogLoader
-    callbacks = [classification_accuracy_callback]  # Here we add a callback that will use the predictions and targets
-                                                    # and compute the % prediction accuracy
 
     # Here we use the following transformations:
     # ToTensor = convert numpy to torch tensor (in float value between 0 and 1.0
@@ -92,7 +91,10 @@ if __name__ == '__main__':
 
     # Instantiate the train loop and train the model.
     train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend)
-    train_loop_handler.add_prediction_callback(callbacks)
+    # We can add any number of callback to compute score or any meanful value from the predictions
+    train_loop_handler.add_score_callback([classification_accuracy_callback])
+    # We can add any number of callbacks to handle epoch's data (loss, timings, scores)
+    train_loop_handler.add_epoch_callback([console_print, visdom_print])
     train_loop_handler.loop(epochs, output_path)
 
     print("Training Complete")

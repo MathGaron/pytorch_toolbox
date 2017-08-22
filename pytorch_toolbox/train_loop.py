@@ -216,7 +216,7 @@ class TrainLoop:
             shutil.copyfile(file_path, os.path.join(path, 'model_best.pth.tar'))
 
     @staticmethod
-    def load_model(path="", filename='model_best.pth.tar'):
+    def load_checkpoint(path="", filename='model_best.pth.tar'):
         """
         Helper function to load models's parameters
         :param state:   dict with metadata and models's weight
@@ -230,12 +230,13 @@ class TrainLoop:
 
         return state
 
-    def loop(self, epochs_qty, output_path):
+    def loop(self, epochs_qty, output_path, load_checkpoint=False):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
-        :param epochs_qty:
-        :param output_path:
+        :param load_checkpoint:  If true, will check for model_best.pth.tar in output path and load it.
+        :param epochs_qty:       Number of epoch to train
+        :param output_path:      Path to save the model and log data
         :return:
         """
         best_prec1 = 65000
@@ -245,8 +246,13 @@ class TrainLoop:
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
-        else:
-            self.model.load_state_dict(self.load_model(output_path)['state_dict'])
+
+        if load_checkpoint:
+            model_name = 'model_best.pth.tar'
+            if os.path.exists(os.path.join(output_path, model_name)):
+                self.model.load_state_dict(self.load_checkpoint(output_path, model_name)['state_dict'])
+            else:
+                raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
         for epoch in range(epochs_qty):
             print("-" * 20)

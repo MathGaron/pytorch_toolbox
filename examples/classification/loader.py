@@ -6,7 +6,7 @@ from pytorch_toolbox.loader.loader_base import LoaderBase
 
 
 class CatVsDogLoader(LoaderBase):
-    def __init__(self, root, transform=None, target_transform=None):
+    def __init__(self, root, transform=[], target_transform=[]):
         classes, class_to_idx = self.find_classes(root)
         self.classes = classes
         self.class_to_idx = class_to_idx

@@ -31,8 +31,8 @@ class VisdomHandler:
     def new_item(cls, item, name):
         if isinstance(item, numbers.Number):
             win = cls.vis.line(
-                X=np.array([cls.iterator, cls.iterator]),
-                Y=np.array([item, item]),
+                X=np.array([cls.iterator]),
+                Y=np.array([item]),
                 opts=dict(title=name)
             )
             cls.windows[name] = win
@@ -49,9 +49,9 @@ class VisdomHandler:
     def update_item(cls, item, name):
         if isinstance(item, numbers.Number):
             cls.vis.updateTrace(
-                X=np.array([cls.iterator-1, cls.iterator]),
-                Y=np.array([cls.items_to_visualize[name], item]),
-                win=cls.windows[name]
+                X=np.array([cls.iterator]),
+                Y=np.array([item]),
+                win=cls.windows[name],
             )
         elif isinstance(item, np.ndarray):
             cls.vis.image(

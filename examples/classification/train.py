@@ -31,6 +31,10 @@ def classification_accuracy_callback(prediction, target):
 
 
 class batch_visualization_callback:
+    """
+    This callback class will remember the number of time it is called. This way we do not update the image at every
+    batch. It also keep a dict idx_to_class for visualization purpose
+    """
     def __init__(self, idx_to_class, update_rate=10):
         self.count = 0
         self.update_rate = update_rate
@@ -47,7 +51,7 @@ class batch_visualization_callback:
         if self.count % self.update_rate == 0:
             vis = VisdomHandler()
 
-            #if not istrain:
+            # Unormalize an image and convert it to uint8
             img = data[0][0].cpu().numpy()
             std = np.array([58, 57, 57], dtype=np.float32)
             mean = np.array([123, 116, 103], dtype=np.float32)
@@ -56,9 +60,11 @@ class batch_visualization_callback:
             img = img * std + mean
             img = img.astype(np.uint8)
 
+            # log softmax output to class string
             prediction_index = np.argmax(prediction[0][0].data.cpu().numpy())
             prediction_class = self.idx_to_class[prediction_index]
 
+            # send to visdom with prediction as caption
             vis.visualize(img, "test", caption="prediction : {}".format(prediction_class))
 
         self.count += 1

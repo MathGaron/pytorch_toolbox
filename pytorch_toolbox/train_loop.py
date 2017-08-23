@@ -35,6 +35,7 @@ class TrainLoop:
 
         self.score_callbacks = []
         self.epoch_callbacks = []
+        self.batch_callbacks = []
 
         if backend == "cuda":
             self.model = self.model.cuda()
@@ -98,7 +99,7 @@ class TrainLoop:
     def add_score_callback(self, func):
         """
         add a prediction callback that takes as input the predictions and targets and return
-        a score that will be displayed
+        a *score* that will be displayed, the callback must return a float
 
         GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
                 minibatch iterations.
@@ -115,7 +116,8 @@ class TrainLoop:
     def add_epoch_callback(self, func):
         """
         add a epoch callback that takes as input the average loss, data load time, batch load time,
-        and a list of average scores computed by score_callbacks
+        and a list of average scores computed by score_callbacks and a boolean to tell if it is called in the train
+        or validation
 
         GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
                 minibatch iterations.
@@ -128,6 +130,23 @@ class TrainLoop:
                 self.epoch_callbacks.append(cb)
         else:
             self.epoch_callbacks.append(func)
+
+    def add_batch_callback(self, func):
+        """
+        add a batch callback that takes as input the last prediction, target and a boolean to tell if it is called from
+         train or validation loop for each minibatch
+
+        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
+                minibatch iterations.
+
+        :param func:
+        :return:
+        """
+        if isinstance(func, list):
+            for cb in func:
+                self.batch_callbacks.append(cb)
+        else:
+            self.batch_callbacks.append(func)
 
     def train(self):
         """
@@ -163,6 +182,8 @@ class TrainLoop:
             for callback, acc in zip(self.score_callbacks, scores):
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
+            for callback in self.batch_callbacks:
+                callback(y_pred, target, True)
 
             self.optim.zero_grad()
             loss.backward()
@@ -208,6 +229,8 @@ class TrainLoop:
             for callback, acc in zip(self.score_callbacks, scores):
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
+            for callback in self.batch_callbacks:
+                callback(y_pred, target, False)
 
             batch_time.update(time.time() - end)
             end = time.time()

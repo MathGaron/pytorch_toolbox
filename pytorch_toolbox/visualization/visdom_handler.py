@@ -19,16 +19,16 @@ class VisdomHandler:
         pass
 
     @classmethod
-    def visualize(cls, item, name):
+    def visualize(cls, item, name, **args):
         cls.iterator += 1
         if name not in cls.items_to_visualize:
-            cls.new_item(item, name)
+            cls.new_item(item, name, **args)
         else:
-            cls.update_item(item, name)
+            cls.update_item(item, name, **args)
         cls.items_to_visualize[name] = item
 
     @classmethod
-    def new_item(cls, item, name):
+    def new_item(cls, item, name, **args):
         if isinstance(item, numbers.Number):
             win = cls.vis.line(
                 X=np.array([cls.iterator]),
@@ -39,14 +39,14 @@ class VisdomHandler:
         elif isinstance(item, np.ndarray):
             win = cls.vis.image(
                 item,
-                opts=dict(title=name, caption=name),
+                opts=args,
             )
             cls.windows[name] = win
         else:
             print("type {} not supported for visualization".format(type(item)))
 
     @classmethod
-    def update_item(cls, item, name):
+    def update_item(cls, item, name, **args):
         if isinstance(item, numbers.Number):
             cls.vis.updateTrace(
                 X=np.array([cls.iterator]),
@@ -56,6 +56,6 @@ class VisdomHandler:
         elif isinstance(item, np.ndarray):
             cls.vis.image(
                 item,
-                opts=dict(title=name, caption=name),
+                opts=args,
                 win=cls.windows[name]
             )

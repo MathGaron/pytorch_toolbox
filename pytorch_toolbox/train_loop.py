@@ -101,6 +101,8 @@ class TrainLoop:
         add a prediction callback that takes as input the predictions and targets and return
         a *score* that will be displayed, the callback must return a float
 
+        callback([prediction1, ...], [target1, ...])
+
         GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
                 minibatch iterations.
 
@@ -119,6 +121,8 @@ class TrainLoop:
         and a list of average scores computed by score_callbacks and a boolean to tell if it is called in the train
         or validation
 
+        ex: callback(loss, load_time, batch_time, [score1, ...], istrain)
+
         GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
                 minibatch iterations.
 
@@ -133,8 +137,10 @@ class TrainLoop:
 
     def add_batch_callback(self, func):
         """
-        add a batch callback that takes as input the last prediction, target and a boolean to tell if it is called from
+        add a batch callback that takes as input the last prediction, network_input, target and a boolean to tell if it is called from
          train or validation loop for each minibatch
+
+        ex: callback([prediction1, ...], [network_input1, ...], [target1, ...], istrain)
 
         GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
                 minibatch iterations.
@@ -183,7 +189,7 @@ class TrainLoop:
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
             for callback in self.batch_callbacks:
-                callback(y_pred, target, True)
+                callback(y_pred, data, target, True)
 
             self.optim.zero_grad()
             loss.backward()
@@ -230,7 +236,7 @@ class TrainLoop:
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
             for callback in self.batch_callbacks:
-                callback(y_pred, target, False)
+                callback(y_pred, data, target, False)
 
             batch_time.update(time.time() - end)
             end = time.time()

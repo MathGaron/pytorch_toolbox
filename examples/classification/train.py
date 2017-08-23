@@ -1,8 +1,10 @@
 import sys
 import os
+import numpy as np
 from multiprocessing import cpu_count
 
-from torch import nn, optim
+import torch
+from torch import optim
 from torch.utils import data
 
 from examples.classification.loader import CatVsDogLoader
@@ -25,6 +27,27 @@ def classification_accuracy_callback(prediction, target):
     """
     prec1, _ = classification_accuracy(prediction[0].data, target[0], top_k=(1, 1))
     return prec1[0]
+
+
+def batch_visualization_callback(prediction, data, target, istrain):
+    """
+    This is a simple callback that send some results to visdom
+    :param prediction:
+    :param target:
+    :return:
+    """
+    #if not istrain:
+    img = data[0][0].cpu().numpy()
+    std = np.array([58, 57, 57], dtype=np.float32)
+    mean = np.array([123, 116, 103], dtype=np.float32)
+    std = std[:, np.newaxis, np.newaxis]
+    mean = mean[:, np.newaxis, np.newaxis]
+    img = img * std + mean
+    img = img.transpose(1, 2, 0).astype(np.uint8)
+    import matplotlib.pyplot as plt
+    plt.imshow(img)
+    plt.show()
+    print(prediction[0][0])
 
 
 if __name__ == '__main__':
@@ -95,6 +118,7 @@ if __name__ == '__main__':
     train_loop_handler.add_score_callback([classification_accuracy_callback])
     # We can add any number of callbacks to handle epoch's data (loss, timings, scores)
     train_loop_handler.add_epoch_callback([console_print, visdom_print])
+    train_loop_handler.add_batch_callback([batch_visualization_callback])
     train_loop_handler.loop(epochs, output_path)
 
     print("Training Complete")

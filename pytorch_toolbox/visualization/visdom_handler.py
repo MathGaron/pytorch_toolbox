@@ -10,9 +10,9 @@ import numbers
 
 class VisdomHandler:
 
+    items_iterator = {}
     items_to_visualize = {}
     windows = {}
-    iterator = 0
     vis = Visdom()
 
     def __init__(self):
@@ -20,7 +20,12 @@ class VisdomHandler:
 
     @classmethod
     def visualize(cls, item, name, **args):
-        cls.iterator += 1
+        """
+            Visualize an item in a new window (if the parameter "name" is not on the list of previously given names) or
+            updates an existing window identified by "name"
+            :param item:   Item to be visualized (a number or a numpy image).
+            :param name:   String to identify the item.
+        """
         if name not in cls.items_to_visualize:
             cls.new_item(item, name, **args)
         else:
@@ -30,8 +35,9 @@ class VisdomHandler:
     @classmethod
     def new_item(cls, item, name, **args):
         if isinstance(item, numbers.Number):
+            cls.items_iterator[name] = 0
             win = cls.vis.line(
-                X=np.array([cls.iterator]),
+                X=np.array([cls.items_iterator[name]]),
                 Y=np.array([item]),
                 opts=dict(title=name)
             )
@@ -49,13 +55,18 @@ class VisdomHandler:
     def update_item(cls, item, name, **args):
         if isinstance(item, numbers.Number):
             cls.vis.updateTrace(
-                X=np.array([cls.iterator]),
+                # to plot the number we need to give its position in the x axis hence we keep track of how many times we
+                # updates this item (stored in items_iterator)
+                X=np.array([cls.items_iterator[name]]),
                 Y=np.array([item]),
                 win=cls.windows[name],
             )
+            cls.items_iterator[name] += 1
         elif isinstance(item, np.ndarray):
             cls.vis.image(
                 item,
                 opts=args,
                 win=cls.windows[name]
             )
+        else:
+            print("type {} not supported for visualization".format(type(item)))

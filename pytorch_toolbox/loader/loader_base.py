@@ -36,12 +36,15 @@ class LoaderBase(Dataset):
         if not isinstance(data, list):
             data = [data]
 
-        for i, transform in enumerate(self.data_transforms):
-            if transform is not None:
-                data[i] = transform(data[i])
-        for i, transform in enumerate(self.target_transforms):
-            if transform is not None:
-                target[i] = transform(target[i])
+        if self.data_transforms is not None:
+            for i, transform in enumerate(self.data_transforms):
+                if transform is not None:
+                    data[i] = transform(data[i])
+
+        if self.target_transforms is not None:
+            for i, transform in enumerate(self.target_transforms):
+                if transform is not None:
+                    target[i] = transform(target[i])
         return data, target
 
     def __len__(self):

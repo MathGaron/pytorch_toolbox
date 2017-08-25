@@ -247,28 +247,29 @@ class TrainLoop:
         return losses, scores
 
     @staticmethod
-    def save_checkpoint(state, is_best, path="", filename='checkpoint.pth.tar'):
+    def save_checkpoint(state, save_all_checkpoints, is_best, path="", filename='checkpoint.pth.tar'):
         """
         Helper function to save models's parameters
         :param state:   dict with metadata and models's weight
         :param is_best: bool
         :param path:    save path
-        :param filename:
+        :param filename:string
         :return:
         """
         file_path = os.path.join(path, filename)
-        torch.save(state, file_path)
+        if save_all_checkpoints:
+            torch.save(state, file_path)
         if is_best:
-            print("Save best checkpoint...")
-            shutil.copyfile(file_path, os.path.join(path, 'model_best.pth.tar'))
+            print("Saving best checkpoint...")
+            torch.save(state, os.path.join(path, 'model_best.pth.tar'))
 
     @staticmethod
-    def load_checkpoint(path="", filename='model_best.pth.tar'):
+    def load_best_checkpoint(path="", filename='model_best.pth.tar'):
         """
         Helper function to load models's parameters
         :param state:   dict with metadata and models's weight
         :param path:    load path
-        :param filename:
+        :param filename:string
         :return:
         """
         file_path = os.path.join(path, filename)
@@ -277,16 +278,18 @@ class TrainLoop:
 
         return state
 
-    def loop(self, epochs_qty, output_path, load_checkpoint=False):
+    def loop(self, epochs_qty, output_path, load_best_checkpoint=False, save_best_checkpoint=False, save_all_checkpoints=False):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
-        :param load_checkpoint:  If true, will check for model_best.pth.tar in output path and load it.
-        :param epochs_qty:       Number of epoch to train
-        :param output_path:      Path to save the model and log data
+        :param load_best_checkpoint:  If true, will check for model_best.pth.tar in output path and load it.
+        :param save_best_checkpoint:  If true, will save model_best.pth.tar in output path.
+        :param save_all_checkpoints:  If true, will save all checkpoints as checkpoint<epoch>.pth.tar in output path.
+        :param epochs_qty:            Number of epoch to train
+        :param output_path:           Path to save the model and log data
         :return:
         """
-        best_prec1 = 65000
+        best_prec1 = float('Inf')
         train_plot_data = None
         valid_plot_data = None
         loss_plot_data = np.zeros((epochs_qty, 2))
@@ -295,10 +298,10 @@ class TrainLoop:
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        if load_checkpoint:
+        if load_best_checkpoint:
             model_name = 'model_best.pth.tar'
             if os.path.exists(os.path.join(output_path, model_name)):
-                self.model.load_state_dict(self.load_checkpoint(output_path, model_name)['state_dict'])
+                self.model.load_state_dict(self.load_best_checkpoint(output_path, model_name)['state_dict'])
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
@@ -329,7 +332,7 @@ class TrainLoop:
                 'epoch': epoch + 1,
                 'state_dict': self.model.state_dict(),
                 'best_prec1': best_prec1,
-            }, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
+            }, save_all_checkpoints, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
             np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
             np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
             np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")

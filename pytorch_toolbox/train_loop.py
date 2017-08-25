@@ -275,8 +275,9 @@ class TrainLoop:
         file_path = os.path.join(path, filename)
         print("Loading best model...")
         state = torch.load(file_path)
-
-        return state
+        dict = state['state_dict']
+        best_prec1 = state['best_prec1']
+        return dict, best_prec1
 
     def loop(self, epochs_qty, output_path, load_best_checkpoint=False, save_best_checkpoint=False, save_all_checkpoints=False):
         """
@@ -301,7 +302,8 @@ class TrainLoop:
         if load_best_checkpoint:
             model_name = 'model_best.pth.tar'
             if os.path.exists(os.path.join(output_path, model_name)):
-                self.model.load_state_dict(self.load_best_checkpoint(output_path, model_name)['state_dict'])
+                dict, best_prec1 = self.load_best_checkpoint(output_path, model_name)
+                self.model.load_state_dict(dict)
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 

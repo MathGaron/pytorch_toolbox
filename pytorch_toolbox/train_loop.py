@@ -33,7 +33,9 @@ class TrainLoop:
         self.backend = backend
         self.model = model
 
-        self.prediction_callbacks = []
+        self.score_callbacks = []
+        self.epoch_callbacks = []
+        self.batch_callbacks = []
 
         if backend == "cuda":
             self.model = self.model.cuda()
@@ -94,10 +96,12 @@ class TrainLoop:
             y_pred = (y_pred,)
         return y_pred
 
-    def add_prediction_callback(self, func):
+    def add_score_callback(self, func):
         """
         add a prediction callback that takes as input the predictions and targets and return
-        a score that will be displayed
+        a *score* that will be displayed, the callback must return a float
+
+        callback([prediction1, ...], [target1, ...])
 
         GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
                 minibatch iterations.
@@ -107,9 +111,48 @@ class TrainLoop:
         """
         if isinstance(func, list):
             for cb in func:
-                self.prediction_callbacks.append(cb)
+                self.score_callbacks.append(cb)
         else:
-            self.prediction_callbacks.append(func)
+            self.score_callbacks.append(func)
+
+    def add_epoch_callback(self, func):
+        """
+        add a epoch callback that takes as input the average loss, data load time, batch load time,
+        and a list of average scores computed by score_callbacks and a boolean to tell if it is called in the train
+        or validation
+
+        ex: callback(loss, load_time, batch_time, [score1, ...], istrain)
+
+        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
+                minibatch iterations.
+
+        :param func:
+        :return:
+        """
+        if isinstance(func, list):
+            for cb in func:
+                self.epoch_callbacks.append(cb)
+        else:
+            self.epoch_callbacks.append(func)
+
+    def add_batch_callback(self, func):
+        """
+        add a batch callback that takes as input the last prediction, network_input, target and a boolean to tell if it is called from
+         train or validation loop for each minibatch
+
+        ex: callback([prediction1, ...], [network_input1, ...], [target1, ...], istrain)
+
+        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
+                minibatch iterations.
+
+        :param func:
+        :return:
+        """
+        if isinstance(func, list):
+            for cb in func:
+                self.batch_callbacks.append(cb)
+        else:
+            self.batch_callbacks.append(func)
 
     def train(self):
         """
@@ -129,7 +172,7 @@ class TrainLoop:
         self.model.train()
 
         scores = []
-        for i in range(len(self.prediction_callbacks)):
+        for i in range(len(self.score_callbacks)):
             scores.append(AverageMeter())
 
         for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
@@ -142,9 +185,11 @@ class TrainLoop:
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
-            for callback, acc in zip(self.prediction_callbacks, scores):
+            for callback, acc in zip(self.score_callbacks, scores):
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
+            for callback in self.batch_callbacks:
+                callback(y_pred, data, target, True)
 
             self.optim.zero_grad()
             loss.backward()
@@ -152,11 +197,9 @@ class TrainLoop:
 
             batch_time.update(time.time() - end)
             end = time.time()
-        print(' Train\t || Loss: {:.3f} | Load Time {:.3f}s | Batch Time {:.3f}s'.format(losses.avg,
-                                                                                         data_time.avg,
-                                                                                         batch_time.avg))
-        for i, acc in enumerate(scores):
-            print('\t || Acc {}: {:.3f}'.format(i, acc.avg))
+        for callback in self.epoch_callbacks:
+            scores_average = [x.avg for x in scores]
+            callback(losses.avg, data_time.avg, batch_time.avg, scores_average, True)
         return losses, scores
 
     def validate(self):
@@ -170,15 +213,17 @@ class TrainLoop:
         :return:
         """
         batch_time = AverageMeter()
+        data_time = AverageMeter()
         losses = AverageMeter()
         scores = []
-        for i in range(len(self.prediction_callbacks)):
+        for i in range(len(self.score_callbacks)):
             scores.append(AverageMeter())
 
         self.model.eval()
 
         end = time.time()
         for i, (data, target) in enumerate(self.valid_data):
+            data_time.update(time.time() - end)
             if not isinstance(target, list):
                 target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
@@ -187,15 +232,17 @@ class TrainLoop:
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
-            for callback, acc in zip(self.prediction_callbacks, scores):
+            for callback, acc in zip(self.score_callbacks, scores):
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
+            for callback in self.batch_callbacks:
+                callback(y_pred, data, target, False)
 
             batch_time.update(time.time() - end)
             end = time.time()
-        print(' Valid\t || Loss: {:.3f} | Batch Test Time {:.3f}s'.format(losses.avg, batch_time.avg))
-        for i, acc in enumerate(scores):
-            print('\t || Acc {}: {:.3f}'.format(i, acc.avg))
+        for callback in self.epoch_callbacks:
+            scores_average = [x.avg for x in scores]
+            callback(losses.avg, data_time.avg, batch_time.avg, scores_average, False)
 
         return losses, scores
 
@@ -243,6 +290,7 @@ class TrainLoop:
         train_plot_data = None
         valid_plot_data = None
         loss_plot_data = np.zeros((epochs_qty, 2))
+
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)

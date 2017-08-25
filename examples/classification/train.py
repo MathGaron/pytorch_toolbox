@@ -1,8 +1,10 @@
 import sys
 import os
+import numpy as np
 from multiprocessing import cpu_count
 
-from torch import nn, optim
+import torch
+from torch import optim
 from torch.utils import data
 
 from examples.classification.loader import CatVsDogLoader
@@ -11,6 +13,8 @@ from pytorch_toolbox.io import yaml_loader
 from pytorch_toolbox.utils import classification_accuracy
 from pytorch_toolbox.train_loop import TrainLoop
 import pytorch_toolbox.data_transforms as dt
+from pytorch_toolbox.visualization.epoch_callbacks import visdom_print, console_print
+from pytorch_toolbox.visualization.visdom_handler import VisdomHandler
 
 
 def classification_accuracy_callback(prediction, target):
@@ -24,6 +28,46 @@ def classification_accuracy_callback(prediction, target):
     """
     prec1, _ = classification_accuracy(prediction[0].data, target[0], top_k=(1, 1))
     return prec1[0]
+
+
+class batch_visualization_callback:
+    """
+    This callback class will remember the number of time it is called. This way we do not update the image at every
+    batch. It also keep a dict idx_to_class for visualization purpose
+    """
+    def __init__(self, idx_to_class, update_rate=10):
+        self.count = 0
+        self.update_rate = update_rate
+        self.idx_to_class = idx_to_class
+
+    def __call__(self, prediction, data, target, istrain):
+        """
+        This is a simple callback that send some results to visdom
+        :param prediction:
+        :param target:
+        :return:
+        """
+
+        if self.count % self.update_rate == 0:
+            vis = VisdomHandler()
+
+            # Unormalize an image and convert it to uint8
+            img = data[0][0].cpu().numpy()
+            std = np.array([58, 57, 57], dtype=np.float32)
+            mean = np.array([123, 116, 103], dtype=np.float32)
+            std = std[:, np.newaxis, np.newaxis]
+            mean = mean[:, np.newaxis, np.newaxis]
+            img = img * std + mean
+            img = img.astype(np.uint8)
+
+            # log softmax output to class string
+            prediction_index = np.argmax(prediction[0][0].data.cpu().numpy())
+            prediction_class = self.idx_to_class[prediction_index]
+
+            # send to visdom with prediction as caption
+            vis.visualize(img, "test", caption="prediction : {}".format(prediction_class))
+
+        self.count += 1
 
 
 if __name__ == '__main__':
@@ -54,8 +98,6 @@ if __name__ == '__main__':
     #
     model = CatVSDogNet()
     loader_class = CatVsDogLoader
-    callbacks = [classification_accuracy_callback]  # Here we add a callback that will use the predictions and targets
-                                                    # and compute the % prediction accuracy
 
     # Here we use the following transformations:
     # ToTensor = convert numpy to torch tensor (in float value between 0 and 1.0
@@ -92,7 +134,11 @@ if __name__ == '__main__':
 
     # Instantiate the train loop and train the model.
     train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend)
-    train_loop_handler.add_prediction_callback(callbacks)
+    # We can add any number of callback to compute score or any meanful value from the predictions
+    train_loop_handler.add_score_callback([classification_accuracy_callback])
+    # We can add any number of callbacks to handle epoch's data (loss, timings, scores)
+    train_loop_handler.add_epoch_callback([console_print, visdom_print])
+    train_loop_handler.add_batch_callback([batch_visualization_callback(train_dataset.idx_to_class)])
     train_loop_handler.loop(epochs, output_path)
 
     print("Training Complete")

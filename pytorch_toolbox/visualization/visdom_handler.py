@@ -15,16 +15,14 @@ class VisdomHandler:
     windows = {}
     vis = Visdom()
 
-    def __init__(self):
-        pass
-
     @classmethod
     def visualize(cls, item, name, **args):
         """
-            Visualize an item in a new window (if the parameter "name" is not on the list of previously given names) or
-            updates an existing window identified by "name"
-            :param item:   Item to be visualized (a number or a numpy image).
-            :param name:   String to identify the item.
+        Visualize an item in a new window (if the parameter "name" is not on the list of previously given names) or
+        updates an existing window identified by "name"
+        :param item:   Item to be visualized (a number or a numpy image).
+        :param name:   String to identify the item.
+        :param args:  dict containing options for visdom
         """
         if name not in cls.items_to_visualize:
             cls.new_item(item, name, **args)

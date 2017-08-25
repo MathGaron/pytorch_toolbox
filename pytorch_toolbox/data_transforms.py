@@ -8,6 +8,7 @@
 import torch
 import random
 import numpy as np
+import cv2
 import scipy.signal
 import scipy.misc
 import scipy.stats as st

@@ -242,3 +242,19 @@ class ImageHue(object):
         numpy_img[:, :, :3] = rgb
         # image_compare(copy[:, :, :3].astype(np.uint8), numpy_img[:, :, :3].astype(np.uint8), 1)
         return numpy_img
+
+class ToneMapper(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, numpy_img):
+        opencv_img = cv2.merge((numpy_img[0], numpy_img[1], numpy_img[2]))
+        tonemap1 = cv2.createTonemapDurand(gamma=2.2)
+        tonemap_img = tonemap1.process(opencv_img)
+        tonemap_img_8bit = np.clip(tonemap_img * 255, 0, 255).astype('uint8')
+
+        reshape_tonemap_img_8bit = np.empty([3, 64, 128])
+        for i in range(3):
+             reshape_tonemap_img_8bit[i, :, :] = tonemap_img_8bit[:, :, i]
+
+        return reshape_tonemap_img_8bit

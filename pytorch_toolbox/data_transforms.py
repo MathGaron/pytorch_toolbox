@@ -62,11 +62,36 @@ class Resize(object):
         resized = scipy.misc.imresize(numpy, self.size, self.interpolation)
         return resized
 
+class HorizontalFlip(object):
+    def __call__(self, numpy):
+        img = np.flip(numpy,axis=1).copy()
+        return img
+
+class HorizontalRotation(object):
+    def __call__(self, numpy):
+        # apply random rotation
+        rotation_amplitude = random.randint(0, numpy.shape[1])
+        img = np.roll(numpy, rotation_amplitude, axis=1)
+        return img
+
 
 class ToFloat(object):
     def __call__(self, numpy):
         return numpy.astype(np.float32)
 
+class Multiply(object):
+    """Given an interval, return the input image multiplied by this value
+    :param min_multiplier: minimum value for the interval
+    :param max_multiplier: maximum value for the interval
+    """
+    def __init__(self, min_multiplier, max_multiplier):
+        self.min_multiplier = min_multiplier
+        self.max_multiplier = max_multiplier
+
+    def __call__(self, numpy):
+        multiplier = np.random.randint(self.min_multiplier, self.max_multiplier, size=1)
+        img = (numpy * multiplier).astype(np.float32)
+        return img
 
 class Normalize(object):
     """Given mean: (R, G, B) and std: (R, G, B),

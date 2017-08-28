@@ -17,6 +17,7 @@ import os
 
 
 class TrainLoop:
+
     def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend):
         """
         See examples/classification/train.py for usage
@@ -293,8 +294,7 @@ class TrainLoop:
         best_prec1 = float('Inf')
         train_plot_data = None
         valid_plot_data = None
-        loss_plot_data = np.zeros((epochs_qty, 2))
-
+        loss_plot_data = np.asarray([]).reshape(-1, 2)
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -314,19 +314,19 @@ class TrainLoop:
             train_loss, train_scores = self.train()
             val_loss, valid_scores = self.validate()
 
-            loss_plot_data[epoch, 0] = train_loss.avg
-            loss_plot_data[epoch, 1] = val_loss.avg
+            loss_tmp = np.asarray([train_loss.avg, val_loss.avg]).reshape(1, 2)
+            loss_plot_data = np.concatenate((loss_plot_data, loss_tmp), axis=0)
             validation_loss_average = val_loss.avg
 
             if train_plot_data is None or valid_plot_data is None:
-                train_plot_data = np.zeros((epochs_qty, len(train_scores)))
-                valid_plot_data = np.zeros((epochs_qty, len(valid_scores)))
+                train_plot_data = np.asarray([]).reshape(-1, len(train_scores))
+                valid_plot_data = np.asarray([]).reshape(-1, len(valid_scores))
 
-            for i, score in enumerate(train_scores):
-                train_plot_data[epoch, i] = score.avg
+            score_avgs_tmp = np.asarray([score.avg for score in train_scores]).reshape(1, len(train_scores))
+            train_plot_data = np.concatenate((train_plot_data, score_avgs_tmp), axis=0)
+            score_avgs_tmp = np.asarray([score.avg for score in valid_scores]).reshape(1, len(valid_scores))
+            valid_plot_data = np.concatenate((valid_plot_data, score_avgs_tmp), axis=0)
 
-            for i, score in enumerate(valid_scores):
-                valid_plot_data[epoch, i] = score.avg
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1
             best_prec1 = min(validation_loss_average, best_prec1)

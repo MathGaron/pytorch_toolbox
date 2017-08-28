@@ -9,11 +9,21 @@ import numbers
 
 
 class VisdomHandler:
-
     items_iterator = {}
     items_to_visualize = {}
     windows = {}
     vis = Visdom()
+
+    def check_availability(vis):
+        # check if the Visdom server is running. only once.
+        is_done = vis.text('visdom check')
+        if is_done is False:
+            print('Visdom server is not running. Run the server first: python -m visdom.server')
+            exit()
+        else:
+            print('Visdom available at: %s:%s' % (vis.server, vis.port))
+            vis.close()  # close visdom check
+    check_availability(vis)
 
     @classmethod
     def visualize(cls, item, name, **args):

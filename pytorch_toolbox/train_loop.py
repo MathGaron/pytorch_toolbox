@@ -278,7 +278,8 @@ class TrainLoop:
         state = torch.load(file_path)
         dict = state['state_dict']
         best_prec1 = state['best_prec1']
-        return dict, best_prec1
+        epoch = state['epoch'] - 1
+        return dict, best_prec1, epoch
 
     def loop(self, epochs_qty, output_path, load_best_checkpoint=False, save_best_checkpoint=False, save_all_checkpoints=False):
         """
@@ -292,9 +293,10 @@ class TrainLoop:
         :return:
         """
         best_prec1 = float('Inf')
+        epoch_start = 0
+        loss_plot_data = np.asarray([]).reshape(-1, 2)
         train_plot_data = None
         valid_plot_data = None
-        loss_plot_data = np.asarray([]).reshape(-1, 2)
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -302,12 +304,22 @@ class TrainLoop:
         if load_best_checkpoint:
             model_name = 'model_best.pth.tar'
             if os.path.exists(os.path.join(output_path, model_name)):
-                dict, best_prec1 = self.load_best_checkpoint(output_path, model_name)
+                dict, best_prec1, epoch_best = self.load_best_checkpoint(output_path, model_name)
                 self.model.load_state_dict(dict)
+                # get back the losses
+                loss_plot_data = np.loadtxt(os.path.join(output_path, "loss.csv"), delimiter=",").reshape(-1, 2)
+                epoch_last = loss_plot_data.shape[0]
+                train_plot_data = np.loadtxt(os.path.join(output_path, "train_scores.csv"), delimiter=",").reshape(epoch_last, -1)
+                valid_plot_data = np.loadtxt(os.path.join(output_path, "valid_scores.csv"), delimiter=",").reshape(epoch_last, -1)
+                # also get back the last i_epoch, won't start from 0 again
+                epoch_start = epoch_best
+                loss_plot_data = loss_plot_data[0:epoch_best, :]
+                train_plot_data = train_plot_data[0:epoch_best, :]
+                valid_plot_data = valid_plot_data[0:epoch_best, :]
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
-        for epoch in range(epochs_qty):
+        for epoch in range(epoch_start, epochs_qty):
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
 

@@ -175,6 +175,7 @@ class TrainLoop:
         scores = []
         for i in range(len(self.score_callbacks)):
             scores.append(AverageMeter())
+        batch_returns = [[] for _ in range(len(self.batch_callbacks))]
 
         for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
             data_time.update(time.time() - end)
@@ -189,8 +190,8 @@ class TrainLoop:
             for callback, acc in zip(self.score_callbacks, scores):
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
-            for callback in self.batch_callbacks:
-                callback(y_pred, data, target, True)
+            for i, callback in enumerate(self.batch_callbacks):
+                batch_returns[i].append(callback.batch(y_pred, data, target, istest=False))
 
             self.optim.zero_grad()
             loss.backward()
@@ -198,6 +199,10 @@ class TrainLoop:
 
             batch_time.update(time.time() - end)
             end = time.time()
+
+        for i, callback in enumerate(self.batch_callbacks):
+            callback.epoch(batch_returns[i], istest=False)
+
         for callback in self.epoch_callbacks:
             scores_average = [x.avg for x in scores]
             callback(losses.avg, data_time.avg, batch_time.avg, scores_average, True)
@@ -219,6 +224,7 @@ class TrainLoop:
         scores = []
         for i in range(len(self.score_callbacks)):
             scores.append(AverageMeter())
+        batch_returns = [[] for _ in range(len(self.batch_callbacks))]
 
         self.model.eval()
 
@@ -236,11 +242,15 @@ class TrainLoop:
             for callback, acc in zip(self.score_callbacks, scores):
                 score = callback(y_pred, target)
                 acc.update(score, data[0].size(0))
-            for callback in self.batch_callbacks:
-                callback(y_pred, data, target, False)
+            for i, callback in enumerate(self.batch_callbacks):
+                batch_returns[i].append(callback.batch(y_pred, data, target, istest=True))
 
             batch_time.update(time.time() - end)
             end = time.time()
+
+        for i, callback in enumerate(self.batch_callbacks):
+            callback.epoch(batch_returns[i], istest=True)
+
         for callback in self.epoch_callbacks:
             scores_average = [x.avg for x in scores]
             callback(losses.avg, data_time.avg, batch_time.avg, scores_average, False)

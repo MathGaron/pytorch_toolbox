@@ -18,8 +18,7 @@ class VisdomHandler:
         # check if the Visdom server is running. only once.
         is_done = vis.text('visdom check')
         if is_done is False:
-            print('Visdom server is not running. Run the server first: python -m visdom.server')
-            exit()
+            raise RuntimeError('Visdom server is not running. Run the server first: python -m visdom.server')
         else:
             print('Visdom available at: %s:%s' % (vis.server, vis.port))
             vis.close()  # close visdom check

@@ -4,6 +4,13 @@ import scipy.misc
 
 
 class DepthHolesNoise(object):
+    """
+        Add depth holes noise on depth channel ( last channel)
+        the holes are predifined patches with random scale. A random number of patches is added to depth at random
+        position.
+        input : nd.array batch of images : [N, H, W, C]
+        output : nd.array batch of images : [N, H, W, C]
+    """
     def __init__(self, max_holes):
         self.max_holes = max_holes
         pattern0 = np.array([[1, 1, 1, 1, 1],

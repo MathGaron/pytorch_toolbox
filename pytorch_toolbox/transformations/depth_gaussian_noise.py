@@ -3,7 +3,16 @@ import numpy as np
 
 
 class DepthGaussianNoise(object):
+    """
+        Add gaussian noise on depth channel ( last channel)
+        input : nd.array batch of images : [N, H, W, C]
+        output : nd.array batch of images : [N, H, W, C]
+    """
     def __init__(self, proba, gaussian_std):
+        """
+        :param proba: float (0-1) probability of adding noise
+        :param gaussian_std: standard deviation of gaussian noise
+        """
         self.probability = proba
         self.gaussian_std = gaussian_std
 

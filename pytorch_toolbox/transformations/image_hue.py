@@ -3,7 +3,13 @@ import numpy as np
 from skimage.color import rgb2hsv, hsv2rgb
 
 
-class ImageHue(object):
+class ImageHSVNoise(object):
+    """
+        Shift HSV values if rgb image.
+        TODO: shift is predefined...we should make it configurable?
+        input : nd.array batch of images : [N, H, W, C]
+        output : nd.array batch of images : [N, H, W, C]
+    """
     def __init__(self, h_proba, s_proba, v_proba):
         self.h_probability = h_proba
         self.s_probability = s_proba

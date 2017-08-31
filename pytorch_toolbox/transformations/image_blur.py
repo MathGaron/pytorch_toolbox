@@ -5,7 +5,19 @@ import scipy.stats as st
 
 
 class ImageBlur(object):
+    """
+        Add gaussian blur noise on channel (RGB being the first 3 and depth the last)
+        Note that depth is treated individually, it can be disabled by setting a probability of 0.
+        The kernel size is randomly selected.
+        input : nd.array batch of images : [N, H, W, C]
+        output : nd.array batch of images : [N, H, W, C]
+    """
     def __init__(self, rgb_proba, depth_proba, kernel_max_size):
+        """
+        :param rgb_proba:  probability to add blur on first 3 channels
+        :param depth_proba: probability to add blur on last channel
+        :param kernel_max_size: maximum blur kernel size
+        """
         self.rgb_probability = rgb_proba
         self.depth_probability = depth_proba
         self.kernel_max_size = kernel_max_size

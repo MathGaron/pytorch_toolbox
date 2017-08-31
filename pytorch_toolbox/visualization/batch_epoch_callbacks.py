@@ -4,8 +4,10 @@ import abc
 class batch_epoch_callback_base(object):
 
     def __init__(self):
-        '''We could define anything, to save the temporal data'''
+        '''We could save the states and temporal data
         self.epoch_data = []
+        self.output_path = ''
+        '''
 
     @abc.abstractmethod
     def batch(prediction, data_feeded, target, istest=True):
@@ -25,9 +27,8 @@ class batch_epoch_callback_base(object):
         ''' Catch up the output from batch()
             After each epoch, .epoch() will be executed, there is no return values
             Input: list of data returned from batch().
-            as in the e.g.: [np.arrray(2, 3), {'key':values}, ...], length is the number of batches
-            This is different than the score_callbacks, which has return
+                   As in the e.g.: [np.arrray(2, 3), {'key':values}, ...], length is the number of batches
+
+            Keep the historical data at each epoch, then you can write all of them onto disk
         '''
-        # keep the historical data at each epoch, then you can write all of them into disk
-        self.epoch_data.append(None)
         pass

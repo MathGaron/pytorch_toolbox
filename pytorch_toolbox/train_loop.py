@@ -309,13 +309,13 @@ class TrainLoop:
                 # get back the losses
                 loss_plot_data = np.loadtxt(os.path.join(output_path, "loss.csv"), delimiter=",").reshape(-1, 2)
                 epoch_last = loss_plot_data.shape[0]
-                train_plot_data = np.loadtxt(os.path.join(output_path, "train_scores.csv"), delimiter=",").reshape(epoch_last, -1)
-                valid_plot_data = np.loadtxt(os.path.join(output_path, "valid_scores.csv"), delimiter=",").reshape(epoch_last, -1)
                 # also get back the last i_epoch, won't start from 0 again
                 epoch_start = epoch_best
                 loss_plot_data = loss_plot_data[0:epoch_best, :]
-                train_plot_data = train_plot_data[0:epoch_best, :]
-                valid_plot_data = valid_plot_data[0:epoch_best, :]
+                if len(self.score_callbacks) > 0:
+                    # there might not be such score callback functions
+                    train_plot_data = np.loadtxt(os.path.join(output_path, "train_scores.csv"), delimiter=",").reshape(epoch_last, -1)[0:epoch_best, :]
+                    valid_plot_data = np.loadtxt(os.path.join(output_path, "valid_scores.csv"), delimiter=",").reshape(epoch_last, -1)[0:epoch_best, :]
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
@@ -330,15 +330,6 @@ class TrainLoop:
             loss_plot_data = np.concatenate((loss_plot_data, loss_tmp), axis=0)
             validation_loss_average = val_loss.avg
 
-            if train_plot_data is None or valid_plot_data is None:
-                train_plot_data = np.asarray([]).reshape(-1, len(train_scores))
-                valid_plot_data = np.asarray([]).reshape(-1, len(valid_scores))
-
-            score_avgs_tmp = np.asarray([score.avg for score in train_scores]).reshape(1, len(train_scores))
-            train_plot_data = np.concatenate((train_plot_data, score_avgs_tmp), axis=0)
-            score_avgs_tmp = np.asarray([score.avg for score in valid_scores]).reshape(1, len(valid_scores))
-            valid_plot_data = np.concatenate((valid_plot_data, score_avgs_tmp), axis=0)
-
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1
             best_prec1 = min(validation_loss_average, best_prec1)
@@ -348,5 +339,15 @@ class TrainLoop:
                 'best_prec1': best_prec1,
             }, save_all_checkpoints, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
             np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
-            np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
-            np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")
+
+            if len(self.score_callbacks) > 0:
+                if train_plot_data is None or valid_plot_data is None:
+                    train_plot_data = np.asarray([]).reshape(-1, len(train_scores))
+                    valid_plot_data = np.asarray([]).reshape(-1, len(valid_scores))
+
+                score_avgs_tmp = np.asarray([score.avg for score in train_scores]).reshape(1, len(train_scores))
+                train_plot_data = np.concatenate((train_plot_data, score_avgs_tmp), axis=0)
+                score_avgs_tmp = np.asarray([score.avg for score in valid_scores]).reshape(1, len(valid_scores))
+                valid_plot_data = np.concatenate((valid_plot_data, score_avgs_tmp), axis=0)
+                np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
+                np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")

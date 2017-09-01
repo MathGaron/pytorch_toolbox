@@ -12,7 +12,9 @@ from examples.classification.net import CatVSDogNet
 from pytorch_toolbox.io import yaml_loader
 from pytorch_toolbox.utils import classification_accuracy
 from pytorch_toolbox.train_loop import TrainLoop
-import pytorch_toolbox.data_transforms as dt
+from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
+from pytorch_toolbox.transformations.to_float import ToFloat
+from pytorch_toolbox.transformations.compose import Compose
 from pytorch_toolbox.visualization.epoch_callbacks import visdom_print, console_print
 from pytorch_toolbox.visualization.visdom_handler import VisdomHandler
 
@@ -35,6 +37,7 @@ class batch_visualization_callback:
     This callback class will remember the number of time it is called. This way we do not update the image at every
     batch. It also keep a dict idx_to_class for visualization purpose
     """
+
     def __init__(self, idx_to_class, update_rate=10):
         self.count = 0
         self.update_rate = update_rate
@@ -106,10 +109,10 @@ if __name__ == '__main__':
     imagenet_std = [58, 57, 57]
     # transfformations are a series of transform to pass to the input data. Here we have to build a list of
     # transforms for each inputs to the network's forward call
-    transformations = [dt.Compose([dt.Resize((128, 128)),
-                                   dt.ToFloat(),
-                                   dt.NumpyImage2Tensor(),
-                                   dt.Normalize(mean=imagenet_mean, std=imagenet_std)])]
+    transformations = [Compose([Resize((128, 128)),
+                                ToFloat(),
+                                NumpyImage2Tensor(),
+                                Normalize(mean=imagenet_mean, std=imagenet_std)])]
 
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
 

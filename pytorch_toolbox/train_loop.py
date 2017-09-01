@@ -81,8 +81,6 @@ class TrainLoop:
             data_var.append(torch.autograd.Variable(data[i], volatile=istest))
         for i in range(len(target)):
             target_var.append(torch.autograd.Variable(target[i], volatile=istest))
-        if len(data_var) == 1:
-            data_var = data_var[0]
         return data_var, target_var
 
     def predict(self, data_variable):
@@ -91,7 +89,7 @@ class TrainLoop:
         :param data_variable: tuple containing the network's input data
         :return:
         """
-        y_pred = self.model(data_variable)
+        y_pred = self.model(*data_variable)
         if not isinstance(y_pred, tuple):
             y_pred = (y_pred,)
         return y_pred

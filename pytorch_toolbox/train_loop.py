@@ -175,8 +175,6 @@ class TrainLoop:
 
         for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
             data_time.update(time.time() - end)
-            if not isinstance(target, list):
-                target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target, istest=False)
             y_pred = self.predict(data_var)
@@ -222,8 +220,6 @@ class TrainLoop:
         end = time.time()
         for i, (data, target) in enumerate(self.valid_data):
             data_time.update(time.time() - end)
-            if not isinstance(target, list):
-                target = [target.view(-1)]
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target, istest=True)
             y_pred = self.predict(data_var)

@@ -99,8 +99,11 @@ class ImageBlur(object):
 
     @staticmethod
     def gkern(kernlen=21, nsig=2):
-        """Returns a 2D Gaussian kernel array."""
-
+        """
+        :param kernlen: size of the Gaussian
+        :param nsig: Standard deviation for Gaussian kernel.
+        :return: Returns a 2D Gaussian kernel array.
+        """
         interval = (2 * nsig + 1.) / kernlen
         x = np.linspace(-nsig - interval / 2., nsig + interval / 2., kernlen + 1)
         kern1d = np.diff(st.norm.cdf(x))
@@ -122,7 +125,6 @@ class ImageHSVNoise(object):
         self.v_probability = v_proba
 
     def __call__(self, numpy_img):
-        # copy = numpy_img.copy()
         rgb = numpy_img[:, :, :3].astype(np.uint8)
         hsv = rgb2hsv(rgb)
         if random.uniform(0, 1) < self.h_probability:
@@ -134,5 +136,19 @@ class ImageHSVNoise(object):
         hsv = np.clip(hsv, 0, 1)
         rgb = hsv2rgb(hsv) * 255
         numpy_img[:, :, :3] = rgb
-        # image_compare(copy[:, :, :3].astype(np.uint8), numpy_img[:, :, :3].astype(np.uint8), 1)
         return numpy_img
+
+
+class HorizontalFlip(object):
+    """
+        Randomly flip an image.
+        input : nd.array batch of images : [N, H, W, C]
+        output : nd.array batch of images : [N, H, W, C]
+    """
+    def __call__(self, numpy_img):
+        random_flip = random.randint(0, 1)
+        if random_flip:
+            img = np.flip(numpy_img, axis=1).copy()
+        else:
+            img = numpy_img
+        return img

@@ -267,13 +267,13 @@ class TrainLoop:
         :param filename:string
         :return:
         """
+        print("Saving checkpoint...")
         file_path = os.path.join(path, filename)
         if save_all_checkpoints:
             torch.save(state, file_path)
         if save_last_checkpoints:
             torch.save(state, os.path.join(path, 'model_last.pth.tar'))
         if is_best:
-            print("Saving best checkpoint...")
             torch.save(state, os.path.join(path, 'model_best.pth.tar'))
 
     @staticmethod
@@ -323,7 +323,7 @@ class TrainLoop:
             model_name = {True: 'model_best.pth.tar',
                           False: 'model_last.pth.tar'}[load_best_checkpoint]
             if os.path.exists(os.path.join(output_path, model_name)):
-                dict, best_prec1, epoch_best = self.load_best_checkpoint(output_path, model_name)
+                dict, best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
                 self.model.load_state_dict(dict)
                 # get back the losses
                 loss_plot_data = np.loadtxt(os.path.join(output_path, "loss.csv"), delimiter=",").reshape(-1, 2)

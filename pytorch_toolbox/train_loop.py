@@ -258,7 +258,7 @@ class TrainLoop:
         return losses, scores
 
     @staticmethod
-    def save_checkpoint(state, save_all_checkpoints, is_best, path="", filename='checkpoint.pth.tar'):
+    def save_checkpoint(state, save_last_checkpoints, save_all_checkpoints, is_best, path="", filename='checkpoint.pth.tar'):
         """
         Helper function to save models's parameters
         :param state:   dict with metadata and models's weight
@@ -270,12 +270,14 @@ class TrainLoop:
         file_path = os.path.join(path, filename)
         if save_all_checkpoints:
             torch.save(state, file_path)
+        if save_last_checkpoints:
+            torch.save(state, os.path.join(path, 'model_last.pth.tar'))
         if is_best:
             print("Saving best checkpoint...")
             torch.save(state, os.path.join(path, 'model_best.pth.tar'))
 
     @staticmethod
-    def load_best_checkpoint(path="", filename='model_best.pth.tar'):
+    def load_checkpoint(path="", filename='checkpoint*.pth.tar'):
         """
         Helper function to load models's parameters
         :param state:   dict with metadata and models's weight
@@ -284,14 +286,19 @@ class TrainLoop:
         :return:
         """
         file_path = os.path.join(path, filename)
-        print("Loading best model...")
+        print("Loading model...")
         state = torch.load(file_path)
         dict = state['state_dict']
         best_prec1 = state['best_prec1']
         epoch = state['epoch'] - 1
         return dict, best_prec1, epoch
 
-    def loop(self, epochs_qty, output_path, load_best_checkpoint=False, save_best_checkpoint=False, save_all_checkpoints=False):
+    def loop(self, epochs_qty, output_path,
+             load_best_checkpoint=False,
+             save_best_checkpoint=False,
+             load_last_checkpoint=False,
+             save_last_checkpoint=False,
+             save_all_checkpoints=False):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
@@ -311,8 +318,10 @@ class TrainLoop:
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        if load_best_checkpoint:
-            model_name = 'model_best.pth.tar'
+        assert not(load_best_checkpoint and load_last_checkpoint), 'Choose to load only one model: last or best'
+        if load_best_checkpoint or load_last_checkpoint:
+            model_name = {True: 'model_best.pth.tar',
+                          False: 'model_last.pth.tar'}[load_best_checkpoint]
             if os.path.exists(os.path.join(output_path, model_name)):
                 dict, best_prec1, epoch_best = self.load_best_checkpoint(output_path, model_name)
                 self.model.load_state_dict(dict)
@@ -347,7 +356,7 @@ class TrainLoop:
                 'epoch': epoch + 1,
                 'state_dict': self.model.state_dict(),
                 'best_prec1': best_prec1,
-            }, save_all_checkpoints, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
+            }, save_last_checkpoint, save_all_checkpoints, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
             np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
 
             if len(self.score_callbacks) > 0:

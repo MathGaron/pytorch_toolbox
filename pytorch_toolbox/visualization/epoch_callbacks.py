@@ -2,6 +2,15 @@ from pytorch_toolbox.visualization.visdom_handler import VisdomHandler
 
 
 def console_print(loss, data_time, batch_time, scores, istrain):
+    """
+    Will make a pretty console print with given information
+    :param loss:        average loss during epoch
+    :param data_time:   average data load time during epoch
+    :param batch_time:  average batch load time during epoch
+    :param scores:      list of scores
+    :param istrain:
+    :return:
+    """
     state = "Train" if istrain else "Valid"
     print(' {}\t || Loss: {:.3f} | Load Time {:.3f}s | Batch Time {:.3f}s'.format(state, loss, data_time, batch_time))
     for i, acc in enumerate(scores):
@@ -9,6 +18,15 @@ def console_print(loss, data_time, batch_time, scores, istrain):
 
 
 def visdom_print(loss, data_time, batch_time, scores, istrain):
+    """
+    Will send the information to visdom for visualisation
+    :param loss:
+    :param data_time:
+    :param batch_time:
+    :param scores:
+    :param istrain:
+    :return:
+    """
     state = "Train" if istrain else "Valid"
     vis = VisdomHandler()
     vis.visualize(loss, '{} loss'.format(state))

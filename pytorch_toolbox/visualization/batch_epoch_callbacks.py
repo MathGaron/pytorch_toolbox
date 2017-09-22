@@ -1,7 +1,7 @@
 import abc
 
 
-class batch_epoch_callback_base(object):
+class LoopCallbackBase(object):
 
     def __init__(self):
         '''We could save the states and temporal data
@@ -19,8 +19,7 @@ class batch_epoch_callback_base(object):
             After each minibatch, the return will be appended to a list,
             which could be further processed in the epoch() function
         '''
-        raise NotImplementedError
-        return None  # any type of data; e.g.: np.arrray(2, 3), {'key':values}
+        pass
 
     @abc.abstractmethod
     def epoch(self, list_of_batch_returns, istest=True):

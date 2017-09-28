@@ -6,5 +6,6 @@ setup(
     packages=['pytorch_toolbox',
               'pytorch_toolbox.network',
               'pytorch_toolbox.loader',
-              'pytorch_toolbox.visualization'], requires=['numpy']
+              'pytorch_toolbox.visualization',
+              'pytorch_toolbox.transformations'], requires=['numpy']
 )

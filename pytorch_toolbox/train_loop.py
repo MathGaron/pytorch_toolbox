@@ -199,10 +199,10 @@ class TrainLoop:
 
     def loop(self, epochs_qty, output_path,
              load_best_checkpoint=False,
-             save_best_checkpoint=False,
              load_last_checkpoint=False,
-             save_last_checkpoint=False,
-             save_all_checkpoints=False):
+             save_best_checkpoint=True,
+             save_last_checkpoint=True,
+             save_all_checkpoints=True):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
@@ -218,13 +218,12 @@ class TrainLoop:
 
         assert not(load_best_checkpoint and load_last_checkpoint), 'Choose to load only one model: last or best'
         if load_best_checkpoint or load_last_checkpoint:
-            model_name = {True: 'model_best.pth.tar',
-                          False: 'model_last.pth.tar'}[load_best_checkpoint]
+            model_name = 'model_best.pth.tar' if load_best_checkpoint else 'model_last.pth.tar'
             if os.path.exists(os.path.join(output_path, model_name)):
                 dict, best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
                 self.model.load_state_dict(dict)
                 # also get back the last i_epoch, won't start from 0 again
-                epoch_start = epoch_best
+                epoch_start = epoch_best + 1
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 

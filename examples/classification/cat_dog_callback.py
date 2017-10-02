@@ -6,7 +6,14 @@ from pytorch_toolbox.utils import classification_accuracy
 
 
 class CatDogCallback(LoopCallbackBase):
+    """
+    Here we define how we handle data during training : visualize, save, etc...
+    """
     def __init__(self, update_rate, idx_to_class, file_output_path, reset_files=True):
+        """
+        In init we can keep persistent data and pass information from the user.
+        For example, we handle how we rewrite the log file if needed.
+        """
         self.batch_scores = []
         self.count = 0
         self.update_rate = update_rate
@@ -21,11 +28,23 @@ class CatDogCallback(LoopCallbackBase):
                 os.remove(valid_path)
 
     def batch(self, predictions, network_inputs, targets, isvalid=True):
+        """
+            We have access to the network input/output and the ground truth for each minibatches, in the cat vs dog
+            case we compute and keep the classification accuracy on the batch. (will use it in epoch callback)
+
+            show_example we send a picture/label to visdom every x iteration
+        """
         score, _ = classification_accuracy(predictions[0].data, targets[0], top_k=(1, 1))
         self.batch_scores.append(score[0])
         self.show_example(network_inputs, predictions)
 
     def epoch(self, loss, data_time, batch_time, isvalid=True):
+        """
+            At every epoch we log the loss, times and accuracy :
+            show in console
+            show with visdom
+            log in file
+        """
         average_score = sum(self.batch_scores)/len(self.batch_scores)
         self.batch_scores = []
         self.console_print(loss, data_time, batch_time, [average_score], isvalid)

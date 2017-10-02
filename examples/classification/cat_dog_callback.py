@@ -1,0 +1,58 @@
+import numpy as np
+import os
+from pytorch_toolbox.visualization.visdom_handler import VisdomHandler
+from pytorch_toolbox.loop_callback_base import LoopCallbackBase
+from pytorch_toolbox.utils import classification_accuracy
+
+
+class CatDogCallback(LoopCallbackBase):
+    def __init__(self, update_rate, idx_to_class, file_output_path, reset_files=True):
+        self.batch_scores = []
+        self.count = 0
+        self.update_rate = update_rate
+        self.idx_to_class = idx_to_class
+        self.file_output_path = file_output_path
+        if reset_files:
+            train_path = os.path.join(self.file_output_path, "training_data.csv")
+            valid_path = os.path.join(self.file_output_path, "validation_data.csv")
+            if os.path.exists(train_path):
+                os.remove(train_path)
+            if os.path.exists(valid_path):
+                os.remove(valid_path)
+
+    def batch(self, predictions, network_inputs, targets, isvalid=True):
+        score, _ = classification_accuracy(predictions[0].data, targets[0], top_k=(1, 1))
+        self.batch_scores.append(score[0])
+        self.show_example(network_inputs, predictions)
+
+    def epoch(self, loss, data_time, batch_time, isvalid=True):
+        average_score = sum(self.batch_scores)/len(self.batch_scores)
+        self.batch_scores = []
+        self.console_print(loss, data_time, batch_time, [average_score], isvalid)
+        self.visdom_print(loss, data_time, batch_time, [average_score], isvalid)
+        filename = "validation_data.csv" if isvalid else "training_data.csv"
+        self.file_print(os.path.join(self.file_output_path, filename),
+                        loss, data_time, batch_time, [average_score])
+
+    def show_example(self, network_input, predictions):
+        if self.count % self.update_rate == 0:
+            vis = VisdomHandler()
+
+            # Unormalize an image and convert it to uint8
+            img = network_input[0][0].cpu().numpy()
+            std = np.array([58, 57, 57], dtype=np.float32)
+            mean = np.array([123, 116, 103], dtype=np.float32)
+            std = std[:, np.newaxis, np.newaxis]
+            mean = mean[:, np.newaxis, np.newaxis]
+            img = img * std + mean
+            img = img.astype(np.uint8)
+
+            # log softmax output to class string
+            prediction_index = np.argmax(predictions[0][0].data.cpu().numpy())
+            prediction_class = self.idx_to_class[prediction_index]
+
+            # send to visdom with prediction as caption
+            vis.visualize(img, "test", caption="prediction : {}".format(prediction_class))
+
+        self.count += 1
+

@@ -231,7 +231,7 @@ class TrainLoop:
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
 
-            train_loss = self.train()
+            self.train()
             val_loss = self.validate()
 
             validation_loss_average = val_loss.avg
@@ -239,7 +239,7 @@ class TrainLoop:
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1
             best_prec1 = min(validation_loss_average, best_prec1)
-            checkpoint_data = {'epoch': epoch + 1, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
+            checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
             if save_all_checkpoints:
                 torch.save(checkpoint_data, os.path.join(output_path, "checkpoint{}.pth.tar".format(epoch)))
             if save_best_checkpoint and is_best:

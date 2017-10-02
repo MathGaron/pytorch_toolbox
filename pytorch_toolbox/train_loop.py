@@ -181,25 +181,6 @@ class TrainLoop:
         return losses
 
     @staticmethod
-    def save_checkpoint(state, save_last_checkpoints, save_all_checkpoints, is_best, path="", filename='checkpoint.pth.tar'):
-        """
-        Helper function to save models's parameters
-        :param state:   dict with metadata and models's weight
-        :param is_best: bool
-        :param path:    save path
-        :param filename:string
-        :return:
-        """
-        print("Saving checkpoint...")
-        file_path = os.path.join(path, filename)
-        if save_all_checkpoints:
-            torch.save(state, file_path)
-        if save_last_checkpoints:
-            torch.save(state, os.path.join(path, 'model_last.pth.tar'))
-        if is_best:
-            torch.save(state, os.path.join(path, 'model_best.pth.tar'))
-
-    @staticmethod
     def load_checkpoint(path="", filename='checkpoint*.pth.tar'):
         """
         Helper function to load models's parameters
@@ -259,9 +240,11 @@ class TrainLoop:
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1
             best_prec1 = min(validation_loss_average, best_prec1)
-            self.save_checkpoint({
-                'epoch': epoch + 1,
-                'state_dict': self.model.state_dict(),
-                'best_prec1': best_prec1,
-            }, save_last_checkpoint, save_all_checkpoints, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
+            checkpoint_data = {'epoch': epoch + 1, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
+            if save_all_checkpoints:
+                torch.save(checkpoint_data, os.path.join(output_path, "checkpoint{}.pth.tar".format(epoch)))
+            if save_best_checkpoint and is_best:
+                torch.save(checkpoint_data, os.path.join(output_path, "model_best.pth.tar"))
+            if save_last_checkpoint:
+                torch.save(checkpoint_data, os.path.join(output_path, "model_last.pth.tar"))
 

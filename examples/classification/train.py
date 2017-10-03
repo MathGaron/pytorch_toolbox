@@ -9,7 +9,7 @@ from torch.utils import data
 
 from examples.classification.loader import CatVsDogLoader
 from examples.classification.net import CatVSDogNet
-from pytorch_toolbox.io import yaml_loader
+from pytorch_toolbox.io import yaml_load
 from pytorch_toolbox.utils import classification_accuracy
 from pytorch_toolbox.train_loop import TrainLoop
 from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
@@ -82,7 +82,7 @@ if __name__ == '__main__':
         config_path = sys.argv[1]
     except IndexError:
         config_path = "train_config.yml"
-    configs = yaml_loader(config_path)
+    configs = yaml_load(config_path)
 
     data_path = configs["data_path"]
     output_path = configs["output_path"]

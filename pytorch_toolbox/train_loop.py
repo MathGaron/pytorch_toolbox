@@ -6,8 +6,6 @@
     - Supports multiple outputs
 
 """
-import shutil
-
 from pytorch_toolbox.utils import AverageMeter
 import time
 import torch
@@ -17,6 +15,7 @@ import os
 
 
 class TrainLoop:
+
     def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend):
         """
         See examples/classification/train.py for usage
@@ -33,9 +32,7 @@ class TrainLoop:
         self.backend = backend
         self.model = model
 
-        self.score_callbacks = []
-        self.epoch_callbacks = []
-        self.batch_callbacks = []
+        self.callbacks = []
 
         if backend == "cuda":
             self.model = self.model.cuda()
@@ -68,7 +65,7 @@ class TrainLoop:
         return data, target
 
     @staticmethod
-    def to_autograd(data, target, istest=True):
+    def to_autograd(data, target, isvalid=True):
         """
         Converts data and target to autograd Variable
         :param data:
@@ -78,9 +75,9 @@ class TrainLoop:
         target_var = []
         data_var = []
         for i in range(len(data)):
-            data_var.append(torch.autograd.Variable(data[i], volatile=istest))
+            data_var.append(torch.autograd.Variable(data[i], volatile=isvalid))
         for i in range(len(target)):
-            target_var.append(torch.autograd.Variable(target[i], volatile=istest))
+            target_var.append(torch.autograd.Variable(target[i], volatile=isvalid))
         return data_var, target_var
 
     def predict(self, data_variable):
@@ -94,63 +91,18 @@ class TrainLoop:
             y_pred = (y_pred,)
         return y_pred
 
-    def add_score_callback(self, func):
+    def add_callback(self, func):
         """
-        add a prediction callback that takes as input the predictions and targets and return
-        a *score* that will be displayed, the callback must return a float
-
-        callback([prediction1, ...], [target1, ...])
-
-        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
-                minibatch iterations.
+        take a callback that will be called during the training process. See pytorch_toolbox.loop_callback_base
 
         :param func:
         :return:
         """
         if isinstance(func, list):
             for cb in func:
-                self.score_callbacks.append(cb)
+                self.callbacks.append(cb)
         else:
-            self.score_callbacks.append(func)
-
-    def add_epoch_callback(self, func):
-        """
-        add a epoch callback that takes as input the average loss, data load time, batch load time,
-        and a list of average scores computed by score_callbacks and a boolean to tell if it is called in the train
-        or validation
-
-        ex: callback(loss, load_time, batch_time, [score1, ...], istrain)
-
-        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
-                minibatch iterations.
-
-        :param func:
-        :return:
-        """
-        if isinstance(func, list):
-            for cb in func:
-                self.epoch_callbacks.append(cb)
-        else:
-            self.epoch_callbacks.append(func)
-
-    def add_batch_callback(self, func):
-        """
-        add a batch callback that takes as input the last prediction, network_input, target and a boolean to tell if it is called from
-         train or validation loop for each minibatch
-
-        ex: callback([prediction1, ...], [network_input1, ...], [target1, ...], istrain)
-
-        GOTCHA: There is a gotcha here, the callback will get the list of prediction and the list of target for every
-                minibatch iterations.
-
-        :param func:
-        :return:
-        """
-        if isinstance(func, list):
-            for cb in func:
-                self.batch_callbacks.append(cb)
-        else:
-            self.batch_callbacks.append(func)
+            self.callbacks.append(func)
 
     def train(self):
         """
@@ -169,23 +121,16 @@ class TrainLoop:
 
         self.model.train()
 
-        scores = []
-        for i in range(len(self.score_callbacks)):
-            scores.append(AverageMeter())
-
         for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, istest=False)
+            data_var, target_var = self.to_autograd(data, target, isvalid=False)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
-            for callback, acc in zip(self.score_callbacks, scores):
-                score = callback(y_pred, target)
-                acc.update(score, data[0].size(0))
-            for callback in self.batch_callbacks:
-                callback(y_pred, data, target, True)
+            for i, callback in enumerate(self.callbacks):
+                callback.batch(y_pred, data, target, isvalid=False)
 
             self.optim.zero_grad()
             loss.backward()
@@ -193,10 +138,11 @@ class TrainLoop:
 
             batch_time.update(time.time() - end)
             end = time.time()
-        for callback in self.epoch_callbacks:
-            scores_average = [x.avg for x in scores]
-            callback(losses.avg, data_time.avg, batch_time.avg, scores_average, True)
-        return losses, scores
+
+        for i, callback in enumerate(self.callbacks):
+            callback.epoch(losses.avg, data_time.avg, batch_time.avg, isvalid=False)
+
+        return losses
 
     def validate(self):
         """
@@ -211,9 +157,6 @@ class TrainLoop:
         batch_time = AverageMeter()
         data_time = AverageMeter()
         losses = AverageMeter()
-        scores = []
-        for i in range(len(self.score_callbacks)):
-            scores.append(AverageMeter())
 
         self.model.eval()
 
@@ -221,44 +164,24 @@ class TrainLoop:
         for i, (data, target) in enumerate(self.valid_data):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, istest=True)
+            data_var, target_var = self.to_autograd(data, target, isvalid=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
-            for callback, acc in zip(self.score_callbacks, scores):
-                score = callback(y_pred, target)
-                acc.update(score, data[0].size(0))
-            for callback in self.batch_callbacks:
-                callback(y_pred, data, target, False)
+            for i, callback in enumerate(self.callbacks):
+                callback.batch(y_pred, data, target, isvalid=True)
 
             batch_time.update(time.time() - end)
             end = time.time()
-        for callback in self.epoch_callbacks:
-            scores_average = [x.avg for x in scores]
-            callback(losses.avg, data_time.avg, batch_time.avg, scores_average, False)
 
-        return losses, scores
+        for i, callback in enumerate(self.callbacks):
+            callback.epoch(losses.avg, data_time.avg, batch_time.avg, isvalid=True)
 
-    @staticmethod
-    def save_checkpoint(state, save_all_checkpoints, is_best, path="", filename='checkpoint.pth.tar'):
-        """
-        Helper function to save models's parameters
-        :param state:   dict with metadata and models's weight
-        :param is_best: bool
-        :param path:    save path
-        :param filename:string
-        :return:
-        """
-        file_path = os.path.join(path, filename)
-        if save_all_checkpoints:
-            torch.save(state, file_path)
-        if is_best:
-            print("Saving best checkpoint...")
-            torch.save(state, os.path.join(path, 'model_best.pth.tar'))
+        return losses
 
     @staticmethod
-    def load_best_checkpoint(path="", filename='model_best.pth.tar'):
+    def load_checkpoint(path="", filename='checkpoint*.pth.tar'):
         """
         Helper function to load models's parameters
         :param state:   dict with metadata and models's weight
@@ -267,13 +190,19 @@ class TrainLoop:
         :return:
         """
         file_path = os.path.join(path, filename)
-        print("Loading best model...")
+        print("Loading model...")
         state = torch.load(file_path)
         dict = state['state_dict']
         best_prec1 = state['best_prec1']
-        return dict, best_prec1
+        epoch = state['epoch'] - 1
+        return dict, best_prec1, epoch
 
-    def loop(self, epochs_qty, output_path, load_best_checkpoint=False, save_best_checkpoint=False, save_all_checkpoints=False):
+    def loop(self, epochs_qty, output_path,
+             load_best_checkpoint=False,
+             load_last_checkpoint=False,
+             save_best_checkpoint=True,
+             save_last_checkpoint=True,
+             save_all_checkpoints=True):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
@@ -285,50 +214,36 @@ class TrainLoop:
         :return:
         """
         best_prec1 = float('Inf')
-        train_plot_data = None
-        valid_plot_data = None
-        loss_plot_data = np.zeros((epochs_qty, 2))
+        epoch_start = 0
 
-
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
-        if load_best_checkpoint:
-            model_name = 'model_best.pth.tar'
+        assert not(load_best_checkpoint and load_last_checkpoint), 'Choose to load only one model: last or best'
+        if load_best_checkpoint or load_last_checkpoint:
+            model_name = 'model_best.pth.tar' if load_best_checkpoint else 'model_last.pth.tar'
             if os.path.exists(os.path.join(output_path, model_name)):
-                dict, best_prec1 = self.load_best_checkpoint(output_path, model_name)
+                dict, best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
                 self.model.load_state_dict(dict)
+                # also get back the last i_epoch, won't start from 0 again
+                epoch_start = epoch_best + 1
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
-        for epoch in range(epochs_qty):
+        for epoch in range(epoch_start, epochs_qty):
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
 
-            train_loss, train_scores = self.train()
-            val_loss, valid_scores = self.validate()
+            self.train()
+            val_loss = self.validate()
 
-            loss_plot_data[epoch, 0] = train_loss.avg
-            loss_plot_data[epoch, 1] = val_loss.avg
             validation_loss_average = val_loss.avg
 
-            if train_plot_data is None or valid_plot_data is None:
-                train_plot_data = np.zeros((epochs_qty, len(train_scores)))
-                valid_plot_data = np.zeros((epochs_qty, len(valid_scores)))
-
-            for i, score in enumerate(train_scores):
-                train_plot_data[epoch, i] = score.avg
-
-            for i, score in enumerate(valid_scores):
-                valid_plot_data[epoch, i] = score.avg
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1
             best_prec1 = min(validation_loss_average, best_prec1)
-            self.save_checkpoint({
-                'epoch': epoch + 1,
-                'state_dict': self.model.state_dict(),
-                'best_prec1': best_prec1,
-            }, save_all_checkpoints, is_best, output_path, "checkpoint{}.pth.tar".format(epoch))
-            np.savetxt(os.path.join(output_path, "loss.csv"), loss_plot_data, delimiter=",")
-            np.savetxt(os.path.join(output_path, "train_scores.csv"), train_plot_data, delimiter=",")
-            np.savetxt(os.path.join(output_path, "valid_scores.csv"), valid_plot_data, delimiter=",")
+            checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
+            if save_all_checkpoints:
+                torch.save(checkpoint_data, os.path.join(output_path, "checkpoint{}.pth.tar".format(epoch)))
+            if save_best_checkpoint and is_best:
+                torch.save(checkpoint_data, os.path.join(output_path, "model_best.pth.tar"))
+            if save_last_checkpoint:
+                torch.save(checkpoint_data, os.path.join(output_path, "model_last.pth.tar"))
+

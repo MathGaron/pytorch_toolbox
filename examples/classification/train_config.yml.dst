@@ -6,3 +6,4 @@ epochs : 15
 use_shared_memory : False | True
 number_of_core : -1
 learning_rate : 0.001
+load_best : False | True

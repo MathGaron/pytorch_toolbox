@@ -3,9 +3,9 @@ import torch.nn as nn
 from pytorch_toolbox.network.network_base import NetworkBase
 
 
-class CatVSDogNet(NetworkBase):
+class CatDogNet(NetworkBase):
     def __init__(self):
-        super(CatVSDogNet, self).__init__()
+        super(CatDogNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 24, 5)
         self.conv1_bn = nn.BatchNorm2d(24)
         self.dropout1 = nn.Dropout2d(0.25)

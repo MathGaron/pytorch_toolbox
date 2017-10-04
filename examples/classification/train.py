@@ -1,76 +1,18 @@
 import sys
 import os
-import numpy as np
 from multiprocessing import cpu_count
 
-import torch
 from torch import optim
 from torch.utils import data
 
 from examples.classification.loader import CatVsDogLoader
 from examples.classification.net import CatVSDogNet
+from examples.classification.cat_dog_callback import CatDogCallback
 from pytorch_toolbox.io import yaml_load
-from pytorch_toolbox.utils import classification_accuracy
 from pytorch_toolbox.train_loop import TrainLoop
 from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
 from pytorch_toolbox.transformations.to_float import ToFloat
 from pytorch_toolbox.transformations.compose import Compose
-from pytorch_toolbox.visualization.epoch_callbacks import visdom_print, console_print
-from pytorch_toolbox.visualization.visdom_handler import VisdomHandler
-
-
-def classification_accuracy_callback(prediction, target):
-    """
-    This is a simple callback that compute the score accuracy
-    Note that the callback take as input every output of the network/target, here we explicitly use the first output
-    which is the class from classification branch
-    :param prediction:
-    :param target:
-    :return:
-    """
-    prec1, _ = classification_accuracy(prediction[0].data, target[0], top_k=(1, 1))
-    return prec1[0]
-
-
-class batch_visualization_callback:
-    """
-    This callback class will remember the number of time it is called. This way we do not update the image at every
-    batch. It also keep a dict idx_to_class for visualization purpose
-    """
-
-    def __init__(self, idx_to_class, update_rate=10):
-        self.count = 0
-        self.update_rate = update_rate
-        self.idx_to_class = idx_to_class
-
-    def __call__(self, prediction, data, target, istrain):
-        """
-        This is a simple callback that send some results to visdom
-        :param prediction:
-        :param target:
-        :return:
-        """
-
-        if self.count % self.update_rate == 0:
-            vis = VisdomHandler()
-
-            # Unormalize an image and convert it to uint8
-            img = data[0][0].cpu().numpy()
-            std = np.array([58, 57, 57], dtype=np.float32)
-            mean = np.array([123, 116, 103], dtype=np.float32)
-            std = std[:, np.newaxis, np.newaxis]
-            mean = mean[:, np.newaxis, np.newaxis]
-            img = img * std + mean
-            img = img.astype(np.uint8)
-
-            # log softmax output to class string
-            prediction_index = np.argmax(prediction[0][0].data.cpu().numpy())
-            prediction_class = self.idx_to_class[prediction_index]
-
-            # send to visdom with prediction as caption
-            vis.visualize(img, "test", caption="prediction : {}".format(prediction_class))
-
-        self.count += 1
 
 
 if __name__ == '__main__':
@@ -92,9 +34,13 @@ if __name__ == '__main__':
     use_shared_memory = configs["use_shared_memory"] == "True"
     number_of_core = int(configs["number_of_core"])
     learning_rate = float(configs["learning_rate"])
+    load_best = configs["load_best"]
 
     if number_of_core == -1:
         number_of_core = cpu_count()
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     #
     #   Instantiate models/loaders/etc.
@@ -137,11 +83,8 @@ if __name__ == '__main__':
 
     # Instantiate the train loop and train the model.
     train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend)
-    # We can add any number of callback to compute score or any meanful value from the predictions
-    train_loop_handler.add_score_callback([classification_accuracy_callback])
-    # We can add any number of callbacks to handle epoch's data (loss, timings, scores)
-    train_loop_handler.add_epoch_callback([console_print, visdom_print])
-    train_loop_handler.add_batch_callback([batch_visualization_callback(train_dataset.idx_to_class)])
-    train_loop_handler.loop(epochs, output_path)
+    # We can add any number of callbacks to handle data during training
+    train_loop_handler.add_callback([CatDogCallback(10, train_dataset.idx_to_class, output_path, reset_files=not load_best)])
+    train_loop_handler.loop(epochs, output_path, load_best_checkpoint=load_best)
 
     print("Training Complete")

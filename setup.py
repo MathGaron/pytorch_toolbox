@@ -9,6 +9,7 @@ setup(
               'pytorch_toolbox.visualization',
               'pytorch_toolbox.transformations'], requires=['numpy',
                                                             'tqdm',
+                                                            'visdom',
                                                             'pyyaml',
                                                            ]
 )

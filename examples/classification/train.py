@@ -8,7 +8,7 @@ from torch.utils import data
 from examples.classification.loader import CatVsDogLoader
 from examples.classification.net import CatVSDogNet
 from examples.classification.cat_dog_callback import CatDogCallback
-from pytorch_toolbox.io import yaml_loader
+from pytorch_toolbox.io import yaml_load
 from pytorch_toolbox.train_loop import TrainLoop
 from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
 from pytorch_toolbox.transformations.to_float import ToFloat
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         config_path = sys.argv[1]
     except IndexError:
         config_path = "train_config.yml"
-    configs = yaml_loader(config_path)
+    configs = yaml_load(config_path)
 
     data_path = configs["data_path"]
     output_path = configs["output_path"]

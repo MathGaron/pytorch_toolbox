@@ -59,9 +59,9 @@ class TrainLoop:
                 target[i] = target[i].cuda()
         else:
             for i in range(len(data)):
-                data[i] = data[i].float()
+                data[i] = data[i].cpu()
             for i in range(len(target)):
-                target[i] = target[i].long()
+                target[i] = target[i].cpu()
         return data, target
 
     @staticmethod

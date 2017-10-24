@@ -1,43 +1,33 @@
 import torch.nn.functional as F
 import torch.nn as nn
-from pytorch_toolbox.network.network_base import NetworkBase
+from pytorch_toolbox.network_base import NetworkBase
+from pytorch_toolbox.modules.conv2d_module import ConvBlock
+from pytorch_toolbox.modules.fc_module import FCBlock
 
 
 class CatDogNet(NetworkBase):
     def __init__(self):
         super(CatDogNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 24, 5)
-        self.conv1_bn = nn.BatchNorm2d(24)
-        self.dropout1 = nn.Dropout2d(0.25)
-        self.conv2 = nn.Conv2d(24, 48, 3)
-        self.conv2_bn = nn.BatchNorm2d(48)
-        self.dropout2 = nn.Dropout2d(0.25)
-        self.conv3 = nn.Conv2d(48, 48, 3)
-        self.conv3_bn = nn.BatchNorm2d(48)
-        self.dropout3 = nn.Dropout2d(0.25)
-        self.conv4 = nn.Conv2d(48, 96, 3)
-        self.conv4_bn = nn.BatchNorm2d(96)
+        self.conv1 = ConvBlock(3, 24, 5, dropout=True, batchnorm=True, maxpool=True, activation=F.elu)
+        self.conv2 = ConvBlock(24, 48, 3, dropout=True, batchnorm=True, maxpool=True, activation=F.elu)
+        self.conv3 = ConvBlock(48, 48, 3, dropout=True, batchnorm=True, maxpool=True, activation=F.elu)
+        self.conv4 = ConvBlock(48, 48, 3, dropout=True, batchnorm=True, maxpool=True, activation=F.elu)
 
         self.view_size = 96 * 6 * 6
-        self.fc1 = nn.Linear(self.view_size, 250)
-        self.fc_bn1 = nn.BatchNorm1d(250)
-        self.fc2 = nn.Linear(250, 2)
 
-        self.dropout1 = nn.Dropout()
-        self.dropout2 = nn.Dropout()
+        self.fc1 = FCBlock(self.view_size, 250, dropout=True, batchnorm=True, activation=F.elu)
+        self.fc2 = FCBlock(250, 2, dropout=False, batchnorm=False, activation=None)
 
         self.criterion = nn.NLLLoss()
 
     def forward(self, x):
-        x = self.dropout1(F.max_pool2d(F.elu(self.conv1(x)), 2))
-        x = self.dropout2(F.max_pool2d(F.elu(self.conv2_bn(self.conv2(x))), 2))
-        x = self.dropout3(F.max_pool2d(F.elu(self.conv3_bn(self.conv3(x))), 2))
-        x = F.max_pool2d(F.elu(self.conv4_bn(self.conv4(x))), 2)
-        x = x.view(-1, self.view_size)
-        x = self.dropout1(x)
-        x = F.elu(self.fc_bn1(self.fc1(x)))
-        x = self.dropout2(x)
-        x = F.log_softmax(self.fc2(x))
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = F.log_softmax(x)
         return x
 
     def loss(self, predictions, targets):

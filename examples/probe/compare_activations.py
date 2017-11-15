@@ -6,7 +6,7 @@ from examples.classification.cat_dog_net import CatDogNet
 from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
 from pytorch_toolbox.transformations.to_float import ToFloat
 from pytorch_toolbox.transformations.compose import Compose
-from pytorch_toolbox.probe.activation import show_activations, compare_activations
+from pytorch_toolbox.probe.activation import compare_activations
 
 if __name__ == '__main__':
 
@@ -19,8 +19,7 @@ if __name__ == '__main__':
     model = CatDogNet()
     model.load(model_path)
     model.eval()
-    cat_path = "cat.jpg"
-    dog_path = "dog.jpg"
+    cat_path = "images/cat.jpg"
 
     # Load test images and prepare it for input in the loaded network
     cat_img_numpy = np.array(Image.open(cat_path).convert('RGB'))
@@ -39,13 +38,9 @@ if __name__ == '__main__':
     cat_img = Variable(transformations(cat_img_numpy).unsqueeze(0))
     cat_occluded_img = Variable(transformations(cat_img_occluded_numpy).unsqueeze(0))
 
-    # Show activation
-    prediction = model(cat_img)
-    activations = model.load_activations()
-    for name, feature in activations.items():
-        show_activations(feature[0], name)
-    plt.show()
-
+    """
+    Show activation difference between two images, in this case we compare a cat and an occluded cat
+    """
     # Show input images
     titles = ["Non occluded cat", "Occluded cat"]
     fig, axes = plt.subplots(2)

@@ -43,15 +43,17 @@ if __name__ == '__main__':
     """
     # Show input images
     titles = ["Non occluded cat", "Occluded cat"]
-    fig, axes = plt.subplots(2)
+    fig, axes = plt.subplots(1, 2)
     axes[0].imshow(cat_img_numpy)
     axes[0].set_title(titles[0])
     axes[1].imshow(cat_img_occluded_numpy)
     axes[1].set_title(titles[1])
     fig.tight_layout()
+    plt.show()
 
     # Show activation difference
     prediction, prediction_occ = compare_activations(model, cat_img, cat_occluded_img, cmin=0, cmax=2.5)
+    plt.show()
 
     # Show predictions
     prediction = prediction.data.cpu().numpy()
@@ -61,7 +63,8 @@ if __name__ == '__main__':
     for ax, prediction, title in zip(axes, predictions, titles):
         ax.bar(np.arange(2), prediction[0])
         ax.set_ylim([0, 1])
-        ax.set_xticks([0, 1], ["cat", "dog"])
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels(["cat", "dog"])
         ax.set_ylabel("probability")
         ax.set_title(title)
     plt.show()

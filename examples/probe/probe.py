@@ -1,22 +1,12 @@
 from PIL import Image
 from torch.autograd import Variable
 import numpy as np
-import math
 import matplotlib.pyplot as plt
 from examples.classification.cat_dog_net import CatDogNet
 from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
 from pytorch_toolbox.transformations.to_float import ToFloat
 from pytorch_toolbox.transformations.compose import Compose
-
-
-def show_activations(feature, min=None, max=None):
-    root = int(math.sqrt(feature.shape[1]))
-    fig, axes = plt.subplots(root, root)
-    for i in range(root):
-        for j in range(root):
-            ax = axes[i][j]
-            ax.imshow(feature[0, i * root + j, :, :], vmin=min, vmax=max)
-    plt.show()
+from pytorch_toolbox.probe.activation import show_activations, compare_activations
 
 if __name__ == '__main__':
 
@@ -29,33 +19,54 @@ if __name__ == '__main__':
     model = CatDogNet()
     model.load(model_path)
     model.eval()
-    idx2class = ["cat", "dog"]
     cat_path = "cat.jpg"
     dog_path = "dog.jpg"
-    cat_img = Image.open(cat_path).convert('RGB')
-    dog_img = Image.open(dog_path).convert('RGB')
 
-    # Here we use the following transformations:
-    # ToTensor = convert numpy to torch tensor (in float value between 0 and 1.0
-    # Normalize = with respect to imagenet parameters
+    # Load test images and prepare it for input in the loaded network
+    cat_img_numpy = np.array(Image.open(cat_path).convert('RGB'))
+    # Occluded version of the image
+    cat_img_occluded_numpy = cat_img_numpy.copy()
+    cat_img_occluded_numpy[121:150, 70:135, :] = 0
+    cat_img_occluded_numpy[20:100, 150:210, :] = 0
+    cat_img_occluded_numpy[150:240, 140:220, :] = 0
+
     imagenet_mean = [123, 116, 103]
     imagenet_std = [58, 57, 57]
-    # transfformations are a series of transform to pass to the input data. Here we have to build a list of
-    # transforms for each inputs to the network's forward call
     transformations = Compose([Resize((128, 128)),
                                 ToFloat(),
                                 NumpyImage2Tensor(),
                                 Normalize(mean=imagenet_mean, std=imagenet_std)])
+    cat_img = Variable(transformations(cat_img_numpy).unsqueeze(0))
+    cat_occluded_img = Variable(transformations(cat_img_occluded_numpy).unsqueeze(0))
 
-    cat_img = transformations(cat_img).unsqueeze(0)
-    dog_img = transformations(dog_img).unsqueeze(0)
-
-    prediction = model(Variable(cat_img)).data.cpu().numpy()
-
+    # Show activation
+    prediction = model(cat_img)
     activations = model.load_activations()
-
     for name, feature in activations.items():
-        print(name)
-        show_activations(feature)
+        show_activations(feature[0], name)
+    plt.show()
 
-    print(idx2class[np.argmax(prediction)])
+    # Show input images
+    titles = ["Non occluded cat", "Occluded cat"]
+    fig, axes = plt.subplots(2)
+    axes[0].imshow(cat_img_numpy)
+    axes[0].set_title(titles[0])
+    axes[1].imshow(cat_img_occluded_numpy)
+    axes[1].set_title(titles[1])
+    fig.tight_layout()
+
+    # Show activation difference
+    prediction, prediction_occ = compare_activations(model, cat_img, cat_occluded_img, cmin=0, cmax=2.5)
+
+    # Show predictions
+    prediction = prediction.data.cpu().numpy()
+    prediction_occ = prediction_occ.data.cpu().numpy()
+    fig, axes = plt.subplots(2)
+    predictions = [prediction, prediction_occ]
+    for ax, prediction, title in zip(axes, predictions, titles):
+        ax.bar(np.arange(2), prediction[0])
+        ax.set_ylim([0, 1])
+        ax.set_xticks([0, 1], ["cat", "dog"])
+        ax.set_ylabel("probability")
+        ax.set_title(title)
+    plt.show()

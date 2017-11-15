@@ -32,7 +32,10 @@ class CatDogNet(NetworkBase):
         x = x.view(-1, self.view_size)
         x = self.fc1(x)
         x = self.fc2(x)
-        x = F.log_softmax(x)
+        if self.training:
+            x = F.log_softmax(x)
+        else:
+            x = F.softmax(x)
         return x
 
     def loss(self, predictions, targets):

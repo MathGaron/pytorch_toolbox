@@ -5,8 +5,8 @@ from multiprocessing import cpu_count
 from torch import optim
 from torch.utils import data
 
-from examples.classification.loader import CatVsDogLoader
-from examples.classification.net import CatVSDogNet
+from examples.classification.cat_dog_loader import CatDogLoader
+from examples.classification.cat_dog_net import CatDogNet
 from examples.classification.cat_dog_callback import CatDogCallback
 from pytorch_toolbox.io import yaml_load
 from pytorch_toolbox.train_loop import TrainLoop
@@ -45,8 +45,8 @@ if __name__ == '__main__':
     #
     #   Instantiate models/loaders/etc.
     #
-    model = CatVSDogNet()
-    loader_class = CatVsDogLoader
+    model = CatDogNet()
+    loader_class = CatDogLoader
 
     # Here we use the following transformations:
     # ToTensor = convert numpy to torch tensor (in float value between 0 and 1.0

@@ -13,7 +13,7 @@ class CatDogNet(NetworkBase):
         self.conv3 = ConvBlock(48, 48, 3, dropout=True, batchnorm=True, maxpool=True, activation=F.elu)
         self.conv4 = ConvBlock(48, 48, 3, dropout=True, batchnorm=True, maxpool=True, activation=F.elu)
 
-        self.view_size = 96 * 6 * 6
+        self.view_size = 48 * 6 * 6
 
         self.fc1 = FCBlock(self.view_size, 250, dropout=True, batchnorm=True, activation=F.elu)
         self.fc2 = FCBlock(250, 2, dropout=False, batchnorm=False, activation=None)
@@ -22,9 +22,14 @@ class CatDogNet(NetworkBase):
 
     def forward(self, x):
         x = self.conv1(x)
+        self.probe_activation["conv1"] = x
         x = self.conv2(x)
+        self.probe_activation["conv2"] = x
         x = self.conv3(x)
+        self.probe_activation["conv3"] = x
         x = self.conv4(x)
+        self.probe_activation["conv4"] = x
+        x = x.view(-1, self.view_size)
         x = self.fc1(x)
         x = self.fc2(x)
         x = F.log_softmax(x)

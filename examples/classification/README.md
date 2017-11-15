@@ -4,21 +4,21 @@ This simple example is there to show how to use the train loop, how to define a 
 to define a network architecture.
 
 ## Typical files by a user:
-#### train.py
+#### [train.py](train.py)
 - Read the configurations
 - Instantiate the network, data loaders, optimizer, transformations
 - Instantiate the Trainloop object
 - Set the callbacks and run
 
-#### cat_dog_net.py
+#### [cat_dog_net.py](cat_dog_net.py)
 - Define architecure (init + forward)
 - Define loss
 
-#### cat_dog_loader.py
+#### [cat_dog_loader.py](cat_dog_loader.py)
 - Define the dataset indexer
 - Define the sample loading function
 
-#### cat_dog_callback.py
+#### [cat_dog_callback.py](cat_dog_callback.py)
 - Define batch callback (visualization, compute scores, extra data to log)
 - Define epoch callback (log, visualization)
 

@@ -23,3 +23,8 @@ Note how the last layers have a low error signal. We can see that the output pro
 
 <img src="images/compare_predictions.png?raw=true" width="900" height="600" align="center">
 
+#### compare_networks.py
+TODO
+
+#### show_tsne_vectors.py
+TODO

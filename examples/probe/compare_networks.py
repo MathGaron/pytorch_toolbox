@@ -41,5 +41,20 @@ if __name__ == '__main__':
     """
     Show activation of input image.
     """
-    compare_networks_activations(modelA, modelB, cat_img, error_func=lambda a, b: np.abs(a-b), cmin=0, cmax=2.5)
+    predictionA, predictionB = compare_networks_activations(modelA, modelB, cat_img,
+                                                            error_func=lambda a, b: np.abs(a-b),
+                                                            cmin=0, cmax=2.5)
+    plt.show()
+
+    # Show predictions
+    prediction = predictionA.data.cpu().numpy()
+    prediction_occ = predictionB.data.cpu().numpy()
+    fig, axes = plt.subplots(2)
+    predictions = [prediction, prediction_occ]
+    for ax, prediction in zip(axes, predictions):
+        ax.bar(np.arange(2), prediction[0])
+        ax.set_ylim([0, 1])
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels(["cat", "dog"])
+        ax.set_ylabel("probability")
     plt.show()

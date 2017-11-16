@@ -26,7 +26,7 @@ Note how the last layers have more channels with low error signal. We can see th
 
 <img src="images/compare_predictions.png?raw=true" width="900" height="600" align="center">
 
-#### compare_networks.py
+#### [compare_networks.py](compare_networks.py)
 TODO
 
 #### show_tsne_vectors.py

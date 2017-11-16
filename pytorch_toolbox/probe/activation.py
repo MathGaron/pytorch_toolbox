@@ -40,3 +40,16 @@ def compare_activations(network, imageA, imageB, error_func=np.subtract, cmin=No
         error = error_func(activationsA[name][0], activationsB[name][0])
         show_activations(error, name, min=cmin, max=cmax)
     return predictionA, predictionB
+
+
+def compare_networks_activations(networkA, networkB, image, error_func=np.subtract, cmin=None, cmax=None):
+    predictionA = networkA(image)
+    activationsA = networkA.load_activations()
+
+    predictionB = networkB(image)
+    activationsB = networkB.load_activations()
+
+    for name in activationsA.keys():
+        error = error_func(activationsA[name][0], activationsB[name][0])
+        show_activations(error, name, min=cmin, max=cmax)
+    return predictionA, predictionB

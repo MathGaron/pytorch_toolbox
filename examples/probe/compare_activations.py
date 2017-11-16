@@ -52,7 +52,8 @@ if __name__ == '__main__':
     plt.show()
 
     # Show activation difference
-    prediction, prediction_occ = compare_activations(model, cat_img, cat_occluded_img, cmin=0, cmax=2.5)
+    prediction, prediction_occ = compare_activations(model, cat_img, cat_occluded_img,
+                                                     error_func=lambda a, b: np.abs(a-b), cmin=0, cmax=2.5)
     plt.show()
 
     # Show predictions

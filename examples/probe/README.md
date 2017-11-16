@@ -1,5 +1,6 @@
 # Description
-The following scripts provide example on how to probe already trained networks for debugging.
+Sometimes, the train/valid curve is not enough to debug. The following scripts provide example on how to probe already trained networks for debugging.
+The following scripts provide easy way to obtain and visualize and compare activation maps.
 
 
 ## Examples
@@ -19,7 +20,7 @@ Load a pretrained model and compare the activations at each layers
 
 ![activation](images/compare_activations.png?raw=true "cat's activation")
 
-Note how the last layers have a low error signal. We can see that the output probability is lightly affected even with large occlusion.
+Note how the last layers have a relatively low error signal. We can see that the output probability is lightly affected even with large occlusion.
 
 <img src="images/compare_predictions.png?raw=true" width="900" height="600" align="center">
 

@@ -6,7 +6,9 @@ General tools for using pytorch :
 
 The main goal if this simple package is to remove the boilerplate code needed for training the network and leave flexibility to the user.
 
-See the Cat vs Dog [example](https://github.com/MathGaron/pytorch_toolbox/tree/develop/examples/classification).
+Cat vs Dog training [example](examples/classification).
+
+Network probing [example](examples/probe).
 
 ## Dependencies 
 - [pyyaml](https://anaconda.org/anaconda/pyyaml)

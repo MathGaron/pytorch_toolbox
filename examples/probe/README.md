@@ -31,3 +31,6 @@ TODO
 
 #### show_tsne_vectors.py
 TODO
+
+### show_grad.py
+TODO : similar to https://github.com/experiencor/deep-viz-keras?

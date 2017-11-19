@@ -31,6 +31,7 @@ class CatDogNet(NetworkBase):
         self.probe_activation["conv4"] = x
         x = x.view(-1, self.view_size)
         x = self.fc1(x)
+        self.probe_activation["lin1"] = x
         x = self.fc2(x)
         if self.training:
             x = F.log_softmax(x)

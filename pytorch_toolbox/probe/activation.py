@@ -12,6 +12,9 @@ def show_activations(feature, title="", min=None, max=None):
     :param max:     maximum value in colormap
     :return:
     """
+    if len(feature.shape) != 3:
+        # todo : should handle vector activation?
+        return
     root = int(math.sqrt(feature.shape[0]))
     fig, axes = plt.subplots(root, root)
     fig.suptitle(title, fontsize="x-large")

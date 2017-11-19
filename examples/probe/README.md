@@ -1,6 +1,6 @@
 # Description
-Sometimes, the train/valid curve is not enough to debug. The following scripts provide example on how to probe already trained networks for debugging.
-The following scripts provide easy way to obtain and visualize and compare activation maps.
+Sometimes, the train/valid curve is not enough to debug. The following scripts provide
+example on how to probe an already trained network for debugging.
 
 
 
@@ -27,7 +27,7 @@ Note how the last layers have more channels with low error signal. We can see th
 <img src="images/compare_predictions.png?raw=true" width="900" height="600" align="center">
 
 #### [compare_networks.py](compare_networks.py)
-TODO
+Compare activations between two networks
 
-#### show_tsne_vectors.py
-TODO
+#### [compare_embedding.py](compare_embedding.py)
+Compare embeddings

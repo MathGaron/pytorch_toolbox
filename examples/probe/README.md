@@ -29,8 +29,11 @@ Note how the last layers have more channels with low error signal. We can see th
 #### [compare_networks.py](compare_networks.py)
 Compare activations between two networks
 
-#### [compare_embedding.py](compare_embedding.py)
+#### [show_embedding.py](show_embedding.py)
 Compare embeddings
 
-### show_grad.py
+#### show_grad.py
 TODO : similar to https://github.com/experiencor/deep-viz-keras?
+
+#### show_runtime.py
+Compute the network's runtime w.r.t minibatch size and plot

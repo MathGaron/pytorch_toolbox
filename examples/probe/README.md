@@ -29,5 +29,13 @@ Note how the last layers have more channels with low error signal. We can see th
 #### [compare_networks.py](compare_networks.py)
 Compare activations between two networks
 
+<<<<<<< HEAD
 #### [compare_embedding.py](compare_embedding.py)
 Compare embeddings
+=======
+#### show_tsne_vectors.py
+TODO
+
+### show_grad.py
+TODO : similar to https://github.com/experiencor/deep-viz-keras?
+>>>>>>> 191274689573d70fc216d66d371bc441fda40826

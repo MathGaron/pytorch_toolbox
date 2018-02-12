@@ -16,7 +16,7 @@ import os
 
 class TrainLoop:
 
-    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend):
+    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False):
         """
         See examples/classification/train.py for usage
 
@@ -31,6 +31,7 @@ class TrainLoop:
         self.optim = optimizer
         self.backend = backend
         self.model = model
+        self.gradient_clip = gradient_clip
 
         self.callbacks = []
 
@@ -134,6 +135,8 @@ class TrainLoop:
 
             self.optim.zero_grad()
             loss.backward()
+            if self.gradient_clip:
+                torch.nn.utils.clip_grad_norm(self.model.parameters(), 1)
             self.optim.step()
 
             batch_time.update(time.time() - end)

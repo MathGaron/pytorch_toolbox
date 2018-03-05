@@ -26,7 +26,7 @@ class CatDogCallback(LoopCallbackBase):
             if os.path.exists(valid_path):
                 os.remove(valid_path)
 
-    def batch(self, predictions, network_inputs, targets, isvalid=True):
+    def batch(self, predictions, network_inputs, targets, is_train=True, tensorboard_logger=None):
         """
             We have access to the network input/output and the ground truth for each minibatches, in the cat vs dog
             case we compute and keep the classification accuracy on the batch. (will use it in epoch callback)
@@ -37,17 +37,21 @@ class CatDogCallback(LoopCallbackBase):
         self.batch_scores.append(score[0])
         self.show_example(network_inputs, predictions)
 
-    def epoch(self, loss, data_time, batch_time, isvalid=True):
+    def epoch(self, epoch, loss, data_time, batch_time, is_train=True, tensorboard_logger=None):
         """
             At every epoch we log the loss, times and accuracy :
             show in console
             show with visdom
             log in file
         """
+
         average_score = sum(self.batch_scores)/len(self.batch_scores)
         self.batch_scores = []
-        self.console_print(loss, data_time, batch_time, [average_score], isvalid)
-        filename = "validation_data.csv" if isvalid else "training_data.csv"
+        tensorboard_logger.scalar_summary('accuracy', average_score, epoch + 1, is_train=is_train)
+        self.console_print(loss, data_time, batch_time, [average_score], is_train)
+
+
+        filename = "training_data.csv" if is_train else "validation_data.csv"
         self.file_print(os.path.join(self.file_output_path, filename),
                         loss, data_time, batch_time, [average_score])
 
@@ -65,7 +69,5 @@ class CatDogCallback(LoopCallbackBase):
             # log softmax output to class string
             prediction_index = np.argmax(predictions[0][0].data.cpu().numpy())
             prediction_class = self.idx_to_class[prediction_index]
-
-
         self.count += 1
 

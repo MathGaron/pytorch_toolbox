@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--epoch', help="number of epoch", action="store", default=25, type=int)
     parser.add_argument('-k', '--backend', help="backend : cuda | cpu", action="store", default="cuda")
     parser.add_argument('-s', '--batchsize', help="Size of minibatch", action="store", default=64, type=int)
+    parser.add_argument('-t', '--tensorboard', help="Size of minibatch", action="store_true")
 
     arguments = parser.parse_args()
 
@@ -44,6 +45,7 @@ if __name__ == '__main__':
     learning_rate = arguments.learningrate
     load_best = arguments.loadbest
     gradient_clip = arguments.gradientclip
+    use_tensorboard = arguments.tensorboard
 
     if number_of_core == -1:
         number_of_core = cpu_count()
@@ -91,7 +93,7 @@ if __name__ == '__main__':
                                  )
 
     # Instantiate the train loop and train the model.
-    train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend, gradient_clip)
+    train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend, gradient_clip, use_tensorboard=use_tensorboard)
     # We can add any number of callbacks to handle data during training
     train_loop_handler.add_callback([CatDogCallback(10, train_dataset.idx_to_class, output_path, reset_files=not load_best)])
     train_loop_handler.loop(epochs, output_path, load_best_checkpoint=load_best)

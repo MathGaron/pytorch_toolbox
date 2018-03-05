@@ -18,7 +18,8 @@ import os
 
 class TrainLoop:
 
-    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False, use_tensorboard=False):
+    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False,
+                 use_tensorboard="", tensorboard_log_path="./logs"):
         """
         See examples/classification/train.py for usage
 
@@ -38,11 +39,10 @@ class TrainLoop:
         self.tensorboard_logger = None
         if self.use_tensorboard:
             from pytorch_toolbox.visualization.tensorboard_logger import TensorboardLogger
-            str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-            self.tensorboard_logger = TensorboardLogger("./logs/{}".format(str))
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+            self.tensorboard_logger = TensorboardLogger(os.path.join(tensorboard_log_path, date_str))
 
         self.callbacks = []
-
         if backend == "cuda":
             self.model = self.model.cuda()
 

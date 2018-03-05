@@ -1,8 +1,7 @@
 import os
-import numpy as np
 from PIL import Image
 
-from pytorch_toolbox.loader.loader_base import LoaderBase
+from pytorch_toolbox.loader_base import LoaderBase
 
 
 class CatDogLoader(LoaderBase):

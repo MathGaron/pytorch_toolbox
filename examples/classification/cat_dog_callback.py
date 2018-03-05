@@ -1,6 +1,5 @@
 import numpy as np
 import os
-from pytorch_toolbox.visualization.visdom_handler import VisdomHandler
 from pytorch_toolbox.loop_callback_base import LoopCallbackBase
 from pytorch_toolbox.utils import classification_accuracy
 
@@ -48,15 +47,12 @@ class CatDogCallback(LoopCallbackBase):
         average_score = sum(self.batch_scores)/len(self.batch_scores)
         self.batch_scores = []
         self.console_print(loss, data_time, batch_time, [average_score], isvalid)
-        self.visdom_print(loss, data_time, batch_time, [average_score], isvalid)
         filename = "validation_data.csv" if isvalid else "training_data.csv"
         self.file_print(os.path.join(self.file_output_path, filename),
                         loss, data_time, batch_time, [average_score])
 
     def show_example(self, network_input, predictions):
         if self.count % self.update_rate == 0:
-            vis = VisdomHandler()
-
             # Unormalize an image and convert it to uint8
             img = network_input[0][0].cpu().numpy()
             std = np.array([58, 57, 57], dtype=np.float32)
@@ -70,8 +66,6 @@ class CatDogCallback(LoopCallbackBase):
             prediction_index = np.argmax(predictions[0][0].data.cpu().numpy())
             prediction_class = self.idx_to_class[prediction_index]
 
-            # send to visdom with prediction as caption
-            vis.visualize(img, "test", caption="prediction : {}".format(prediction_class))
 
         self.count += 1
 

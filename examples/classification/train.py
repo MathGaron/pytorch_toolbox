@@ -1,14 +1,13 @@
-import sys
+import argparse
 import os
 from multiprocessing import cpu_count
 
 from torch import optim
 from torch.utils import data
 
-from examples.classification.loader import CatVsDogLoader
-from examples.classification.net import CatVSDogNet
+from examples.classification.cat_dog_loader import CatDogLoader
+from examples.classification.cat_dog_net import CatDogNet
 from examples.classification.cat_dog_callback import CatDogCallback
-from pytorch_toolbox.io import yaml_load
 from pytorch_toolbox.train_loop import TrainLoop
 from pytorch_toolbox.transformations.image import Resize, Normalize, NumpyImage2Tensor
 from pytorch_toolbox.transformations.to_float import ToFloat
@@ -20,22 +19,31 @@ if __name__ == '__main__':
     #
     #   Load configurations
     #
-    try:
-        config_path = sys.argv[1]
-    except IndexError:
-        config_path = "train_config.yml"
-    configs = yaml_load(config_path)
+    parser = argparse.ArgumentParser(description='Train Cat and Dog Example')
+    parser.add_argument('-o', '--output', help="Output path", required=True)
+    parser.add_argument('-d', '--dataset', help="Dataset path", required=True)
 
-    data_path = configs["data_path"]
-    output_path = configs["output_path"]
-    backend = configs["backend"]
-    batch_size = configs["batch_size"]
-    epochs = configs["epochs"]
-    use_shared_memory = configs["use_shared_memory"] == "True"
-    number_of_core = int(configs["number_of_core"])
-    learning_rate = float(configs["learning_rate"])
-    load_best = configs["load_best"]
-    gradient_clip = configs["gradient_clip"]
+    parser.add_argument('-l', '--learningrate', help="learning rate", action="store", default=0.001, type=float)
+    parser.add_argument('-m', '--sharememory', help="Activate share memory", action="store_true")
+    parser.add_argument('-b', '--loadbest', help="Load best model before training", action="store_true")
+    parser.add_argument('-n', '--ncore', help="number of cpu core to use, -1 is all core", action="store", default=-1, type=int)
+    parser.add_argument('-g', '--gradientclip', help="Activate gradient clip", action="store_true")
+    parser.add_argument('-e', '--epoch', help="number of epoch", action="store", default=25, type=int)
+    parser.add_argument('-k', '--backend', help="backend : cuda | cpu", action="store", default="cuda")
+    parser.add_argument('-s', '--batchsize', help="Size of minibatch", action="store", default=64, type=int)
+
+    arguments = parser.parse_args()
+
+    data_path = arguments.dataset
+    output_path = arguments.output
+    backend = arguments.backend
+    batch_size = arguments.batchsize
+    epochs = arguments.epoch
+    use_shared_memory = arguments.sharememory
+    number_of_core = arguments.ncore
+    learning_rate = arguments.learningrate
+    load_best = arguments.loadbest
+    gradient_clip = arguments.gradientclip
 
     if number_of_core == -1:
         number_of_core = cpu_count()
@@ -46,8 +54,8 @@ if __name__ == '__main__':
     #
     #   Instantiate models/loaders/etc.
     #
-    model = CatVSDogNet()
-    loader_class = CatVsDogLoader
+    model = CatDogNet()
+    loader_class = CatDogLoader
 
     # Here we use the following transformations:
     # ToTensor = convert numpy to torch tensor (in float value between 0 and 1.0

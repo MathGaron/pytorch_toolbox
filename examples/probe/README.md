@@ -35,5 +35,5 @@ Compare embeddings
 #### show_grad.py
 TODO : similar to https://github.com/experiencor/deep-viz-keras?
 
-#### show_runtime.py
+#### [show_runtime.py](show_runtime.py)
 Compute the network's runtime w.r.t minibatch size and plot

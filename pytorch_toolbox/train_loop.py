@@ -19,7 +19,7 @@ import os
 class TrainLoop:
 
     def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False,
-                 use_tensorboard="", tensorboard_log_path="./logs"):
+                 use_tensorboard=False, tensorboard_log_path="./logs"):
         """
         See examples/classification/train.py for usage
 

@@ -255,7 +255,11 @@ class TrainLoop:
                 for tag, value in self.model.named_parameters():
                     tag = tag.replace('.', '/')
                     self.tensorboard_logger.histo_summary(tag, self.to_np(value), epoch + 1)
-                    self.tensorboard_logger.histo_summary(tag + '/grad', self.to_np(value.grad), epoch + 1)
+                    try:
+                        self.tensorboard_logger.histo_summary(tag + '/grad', self.to_np(value.grad), epoch + 1)
+                    except AttributeError:
+                        print('None grad:', tag, value.shape)
+                        self.tensorboard_logger.histo_summary(tag + '/grad', np.asarray([0]), epoch + 1)
 
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1

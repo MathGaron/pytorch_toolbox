@@ -11,6 +11,7 @@ class LoopCallbackBase(object):
         :param network_inputs:
         :param targets:
         :param is_train:
+        :param tensorboard_logger:
         :return:
         """
         pass
@@ -19,10 +20,12 @@ class LoopCallbackBase(object):
     def epoch(self, epoch, loss, data_time, batch_time, is_train=True, tensorboard_logger=None):
         """
         Function called at the end of each epoch.
+        :param epoch:       current epoch
         :param loss:        average loss
         :param data_time:   average data load time
         :param batch_time:  average batch processing time
-        :param is_train:
+        :param is_train:    in training stage or valication stage
+        :param tensorboard_logger: TensorboardLogger from ./visualization
         :return:
         """
         pass
@@ -52,7 +55,7 @@ class LoopCallbackBase(object):
         :param loss:        average loss during epoch
         :param data_time:   average data load time during epoch
         :param batch_time:  average batch load time during epoch
-        :param extra_data:      list of extra data
+        :param extra_data:  list of extra data
         :param isvalid:
         :return:
         """

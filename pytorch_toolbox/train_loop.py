@@ -18,7 +18,7 @@ import os
 
 class TrainLoop:
 
-    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False,
+    def __init__(self, model, train_data_loader, valid_data_loader, optimizers, backend, gradient_clip=False,
                  use_tensorboard=False, tensorboard_log_path="./logs"):
         """
         See examples/classification/train.py for usage
@@ -26,12 +26,12 @@ class TrainLoop:
         :param model:               Any NetworkBase (in pytorch_toolbox.network) (it is the network model to train)
         :param train_data_loader:   Any torch dataloader for training data
         :param valid_data_loader:   Any torch dataloader for validation data
-        :param optimizer:           Any torch optimizer
+        :param optimizers:          List of any torch optimizers, the order is important though
         :param backend:             cuda | cpu
         """
         self.train_data = train_data_loader
         self.valid_data = valid_data_loader
-        self.optim = optimizer
+        self.optims = optimizers if type(optimizers) is list else [optimizers]
         self.backend = backend
         self.model = model
         self.gradient_clip = gradient_clip
@@ -141,11 +141,11 @@ class TrainLoop:
             for i, callback in enumerate(self.callbacks):
                 callback.batch(y_pred, data, target, is_train=True, tensorboard_logger=self.tensorboard_logger)
 
-            self.optim.zero_grad()
+            [optim.zero_grad() for optim in self.optims]
             loss.backward()
             if self.gradient_clip:
                 torch.nn.utils.clip_grad_norm(self.model.parameters(), 1)
-            self.optim.step()
+            [optim.step() for optim in self.optims]
 
             batch_time.update(time.time() - end)
             end = time.time()

@@ -19,7 +19,7 @@ import os
 class TrainLoop:
 
     def __init__(self, model, train_data_loader, valid_data_loader, optimizers, backend, gradient_clip=False,
-                 use_tensorboard=False, tensorboard_log_path="./logs"):
+                 use_tensorboard=False, tensorboard_log_path="./logs", scheduler=None):
         """
         See examples/classification/train.py for usage
 
@@ -28,6 +28,7 @@ class TrainLoop:
         :param valid_data_loader:   Any torch dataloader for validation data
         :param optimizers:          List of any torch optimizers, the order is important though
         :param backend:             cuda | cpu
+        :param scheduler:           Adjust learning rate
         """
         self.train_data = train_data_loader
         self.valid_data = valid_data_loader
@@ -37,6 +38,7 @@ class TrainLoop:
         self.gradient_clip = gradient_clip
         self.use_tensorboard = use_tensorboard
         self.tensorboard_logger = None
+        self.scheduler = scheduler
         if self.use_tensorboard:
             from pytorch_toolbox.visualization.tensorboard_logger import TensorboardLogger
             date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -245,6 +247,9 @@ class TrainLoop:
 
             train_loss = self.train(epoch + 1)
             val_loss = self.validate(epoch + 1)
+
+            if self.scheduler is not None:
+                self.scheduler.step() if type(self.scheduler) != torch.optim.lr_scheduler.ReduceLROnPlateau else self.scheduler.step(val_loss.val)
 
             validation_loss_average = val_loss.avg
             training_loss_average = train_loss.avg

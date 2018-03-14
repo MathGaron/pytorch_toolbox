@@ -145,7 +145,7 @@ if not use_tensorboardX:
     class TensorboardLogger(TensorboardLogger_PureTF):
 
         def __init__(self, log_dir):
-            super(TensorboardLogger_PureTF, self).__init__(log_dir)
+            super(TensorboardLogger, self).__init__(log_dir)
 else:
     class TensorboardLogger(TensorboardLogger_X):
 

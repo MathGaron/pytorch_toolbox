@@ -30,5 +30,4 @@ to define a network architecture.
  - You can move a specific amount of random files with the followinf command: 
  
    ``` shuf -n [Number of files to move] -e [PATH to the files to be moved] | xargs -i mv {} [PATH to the dest] ``` 
-- Copy `train_config.yml.dst` to `train_config.yml` and set the proper paths/parameters.
-- run ``` python train.py train_config.yml ```
+- run ``` python train.py --output /your/output/path --dataset /your/dataset/path ```

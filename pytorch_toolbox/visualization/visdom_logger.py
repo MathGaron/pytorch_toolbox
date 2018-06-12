@@ -8,7 +8,7 @@ import numpy as np
 import numbers
 
 
-class VisdomHandler:
+class VisdomLogger:
     items_iterator = {}
     items_to_visualize = {}
     windows = {}

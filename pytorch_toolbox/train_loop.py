@@ -6,6 +6,8 @@
     - Supports multiple outputs
 
 """
+import datetime
+
 from pytorch_toolbox.utils import AverageMeter
 import time
 import torch
@@ -16,7 +18,8 @@ import os
 
 class TrainLoop:
 
-    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False):
+    def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False,
+                 use_tensorboard=False, tensorboard_log_path="./logs"):
         """
         See examples/classification/train.py for usage
 
@@ -32,9 +35,14 @@ class TrainLoop:
         self.backend = backend
         self.model = model
         self.gradient_clip = gradient_clip
+        self.use_tensorboard = use_tensorboard
+        self.tensorboard_logger = None
+        if self.use_tensorboard:
+            from pytorch_toolbox.visualization.tensorboard_logger import TensorboardLogger
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+            self.tensorboard_logger = TensorboardLogger(os.path.join(tensorboard_log_path, date_str))
 
         self.callbacks = []
-
         if backend == "cuda":
             self.model = self.model.cuda()
 
@@ -66,7 +74,7 @@ class TrainLoop:
         return data, target
 
     @staticmethod
-    def to_autograd(data, target, isvalid=True):
+    def to_autograd(data, target, is_train=True):
         """
         Converts data and target to autograd Variable
         :param data:
@@ -76,9 +84,9 @@ class TrainLoop:
         target_var = []
         data_var = []
         for i in range(len(data)):
-            data_var.append(torch.autograd.Variable(data[i], volatile=isvalid))
+            data_var.append(torch.autograd.Variable(data[i], volatile=not is_train))
         for i in range(len(target)):
-            target_var.append(torch.autograd.Variable(target[i], volatile=isvalid))
+            target_var.append(torch.autograd.Variable(target[i], volatile=not is_train))
         return data_var, target_var
 
     def predict(self, data_variable):
@@ -105,7 +113,7 @@ class TrainLoop:
         else:
             self.callbacks.append(func)
 
-    def train(self):
+    def train(self, epoch):
         """
         Minibatch loop for training. Will iterate through the whole dataset and backprop for every minibatch
 
@@ -125,13 +133,13 @@ class TrainLoop:
         for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, isvalid=False)
+            data_var, target_var = self.to_autograd(data, target, is_train=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
             for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, isvalid=False)
+                callback.batch(y_pred, data, target, is_train=True, tensorboard_logger=self.tensorboard_logger)
 
             self.optim.zero_grad()
             loss.backward()
@@ -143,11 +151,12 @@ class TrainLoop:
             end = time.time()
 
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(losses.avg, data_time.avg, batch_time.avg, isvalid=False)
+            callback.epoch(epoch, losses.avg, data_time.avg, batch_time.avg,
+                           is_train=True, tensorboard_logger=self.tensorboard_logger)
 
         return losses
 
-    def validate(self):
+    def validate(self, epoch):
         """
         Validation loop (refer to train())
 
@@ -167,19 +176,19 @@ class TrainLoop:
         for i, (data, target) in enumerate(self.valid_data):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, isvalid=True)
+            data_var, target_var = self.to_autograd(data, target, is_train=False)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
             for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, isvalid=True)
+                callback.batch(y_pred, data, target, is_train=False, tensorboard_logger=self.tensorboard_logger)
 
             batch_time.update(time.time() - end)
             end = time.time()
 
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(losses.avg, data_time.avg, batch_time.avg, isvalid=True)
+            callback.epoch(epoch, losses.avg, data_time.avg, batch_time.avg, is_train=False, tensorboard_logger=self.tensorboard_logger)
 
         return losses
 
@@ -234,10 +243,23 @@ class TrainLoop:
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
 
-            self.train()
-            val_loss = self.validate()
+            train_loss = self.train(epoch + 1)
+            val_loss = self.validate(epoch + 1)
 
             validation_loss_average = val_loss.avg
+            training_loss_average = train_loss.avg
+
+            if self.tensorboard_logger is not None:
+                self.tensorboard_logger.scalar_summary('loss', training_loss_average, epoch + 1)
+                self.tensorboard_logger.scalar_summary('loss', validation_loss_average, epoch + 1, is_train=False)
+                for tag, value in self.model.named_parameters():
+                    tag = tag.replace('.', '/')
+                    self.tensorboard_logger.histo_summary(tag, self.to_np(value), epoch + 1)
+                    try:
+                        self.tensorboard_logger.histo_summary(tag + '/grad', self.to_np(value.grad), epoch + 1)
+                    except AttributeError:
+                        print('None grad:', tag, value.shape)
+                        self.tensorboard_logger.histo_summary(tag + '/grad', np.asarray([0]), epoch + 1)
 
             # remember best loss and save checkpoint
             is_best = validation_loss_average < best_prec1
@@ -249,4 +271,8 @@ class TrainLoop:
                 torch.save(checkpoint_data, os.path.join(output_path, "model_best.pth.tar"))
             if save_last_checkpoint:
                 torch.save(checkpoint_data, os.path.join(output_path, "model_last.pth.tar"))
+
+    @staticmethod
+    def to_np(x):
+        return x.data.cpu().numpy()
 

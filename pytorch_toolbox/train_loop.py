@@ -37,6 +37,8 @@ class TrainLoop:
         self.gradient_clip = gradient_clip
         self.use_tensorboard = use_tensorboard
         self.tensorboard_logger = None
+        self.epoch_start = 0
+        self.best_prec1 = float('Inf')
         if self.use_tensorboard:
             from pytorch_toolbox.visualization.tensorboard_logger import TensorboardLogger
             date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -156,6 +158,9 @@ class TrainLoop:
 
         return losses
 
+    def test(self):
+        self.validate(0)
+
     def validate(self, epoch):
         """
         Validation loop (refer to train())
@@ -192,8 +197,7 @@ class TrainLoop:
 
         return losses
 
-    @staticmethod
-    def load_checkpoint(path="", filename='checkpoint*.pth.tar'):
+    def load_checkpoint(self, path="", filename='checkpoint*.pth.tar'):
         """
         Helper function to load models's parameters
         :param state:   dict with metadata and models's weight
@@ -205,9 +209,27 @@ class TrainLoop:
         print("Loading model...")
         state = torch.load(file_path)
         dict = state['state_dict']
-        best_prec1 = state['best_prec1']
+        self.best_prec1 = state['best_prec1']
         epoch = state['epoch'] - 1
-        return dict, best_prec1, epoch
+        return dict, self.best_prec1, epoch
+
+
+    def setup_checkpoint(self, load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec):
+        """
+        Function to setup the desired checkpoint to be loaded (if desired)
+        """
+        assert not (load_best_checkpoint and load_last_checkpoint), 'Choose to load only one model: last or best'
+        if load_best_checkpoint or load_last_checkpoint:
+            model_name = 'model_best.pth.tar' if load_best_checkpoint else 'model_last.pth.tar'
+            if os.path.exists(os.path.join(output_path, model_name)):
+                dict, self.best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
+                if forget_best_prec:
+                    self.best_prec1 = float('Inf')
+                self.model.load_state_dict(dict)
+                # also get back the last i_epoch, won't start from 0 again
+                self.epoch_start = epoch_best + 1
+            else:
+                raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
     def loop(self, epochs_qty, output_path,
              load_best_checkpoint=False,
@@ -226,21 +248,9 @@ class TrainLoop:
         :param output_path:           Path to save the model and log data
         :return:
         """
-        best_prec1 = float('Inf')
-        epoch_start = 0
 
-        assert not(load_best_checkpoint and load_last_checkpoint), 'Choose to load only one model: last or best'
-        if load_best_checkpoint or load_last_checkpoint:
-            model_name = 'model_best.pth.tar' if load_best_checkpoint else 'model_last.pth.tar'
-            if os.path.exists(os.path.join(output_path, model_name)):
-                dict, best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
-                if forget_best_prec:
-                    best_prec1 = float('Inf')
-                self.model.load_state_dict(dict)
-                # also get back the last i_epoch, won't start from 0 again
-                epoch_start = epoch_best + 1
-            else:
-                raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
+
+        setup_checkpoint(load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec)
 
         for epoch in range(epoch_start, epochs_qty):
             print("-" * 20)
@@ -265,9 +275,9 @@ class TrainLoop:
                         self.tensorboard_logger.histo_summary(tag + '/grad', np.asarray([0]), epoch + 1)
 
             # remember best loss and save checkpoint
-            is_best = validation_loss_average < best_prec1
-            best_prec1 = min(validation_loss_average, best_prec1)
-            checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
+            is_best = validation_loss_average < self.best_prec1
+            self.best_prec1 = min(validation_loss_average, self.best_prec1)
+            checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': self.best_prec1}
             if save_all_checkpoints:
                 torch.save(checkpoint_data, os.path.join(output_path, "checkpoint{}.pth.tar".format(epoch)))
             if save_best_checkpoint and is_best:

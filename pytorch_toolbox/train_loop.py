@@ -66,13 +66,13 @@ class TrainLoop:
         if backend == "cuda":
             for i in range(len(data)):
                 data[i] = data[i].cuda()
-            for i in range(len(target)):
-                target[i] = target[i].cuda()
+            # for i in range(len(target)):
+            #     target[i] = target[i].cuda()
         else:
             for i in range(len(data)):
                 data[i] = data[i].cpu()
-            for i in range(len(target)):
-                target[i] = target[i].cpu()
+            # for i in range(len(target)):
+            #     target[i] = target[i].cpu()
         return data, target
 
     @staticmethod
@@ -87,9 +87,9 @@ class TrainLoop:
         data_var = []
         for i in range(len(data)):
             data_var.append(torch.autograd.Variable(data[i], volatile=not is_train))
-        for i in range(len(target)):
-            target_var.append(torch.autograd.Variable(target[i], volatile=not is_train))
-        return data_var, target_var
+        # for i in range(len(target)):
+        #     target_var.append(torch.autograd.Variable(target[i], volatile=not is_train))
+        return data_var, target
 
     def predict(self, data_variable):
         """
@@ -159,7 +159,19 @@ class TrainLoop:
         return losses
 
     def test(self):
-        self.validate(0)
+        """
+        Test loop (refer to train())
+        """
+        self.model.eval()
+
+        for i, (data, target) in enumerate(self.valid_data):
+            data, target = self.setup_loaded_data(data, target, self.backend)
+            data_var, target_var = self.to_autograd(data, target, is_train=False)
+            y_pred = self.predict(data_var)
+
+            for i, callback in enumerate(self.callbacks):
+                callback.batch(y_pred, data, target, is_train=False, tensorboard_logger=self.tensorboard_logger)
+
 
     def validate(self, epoch):
         """
@@ -225,6 +237,7 @@ class TrainLoop:
                 dict, self.best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
                 if forget_best_prec:
                     self.best_prec1 = float('Inf')
+                print('best_prec: {}'.format(self.best_prec1))
                 self.model.load_state_dict(dict)
                 # also get back the last i_epoch, won't start from 0 again
                 self.epoch_start = epoch_best + 1
@@ -250,9 +263,9 @@ class TrainLoop:
         """
 
 
-        setup_checkpoint(load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec)
+        self.setup_checkpoint(load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec)
 
-        for epoch in range(epoch_start, epochs_qty):
+        for epoch in range(self.epoch_start, epochs_qty):
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
 

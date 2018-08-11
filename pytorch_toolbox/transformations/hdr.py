@@ -56,7 +56,7 @@ class ToneMapper(object):
         tonemap_img = tonemap1.process(opencv_img)
         tonemap_img_8bit = np.clip(tonemap_img * 255, 0, 255).astype('uint8')
 
-        reshape_tonemap_img_8bit = np.empty([3, 64, 128])
+        reshape_tonemap_img_8bit = np.empty([3, 886634, 1])
         for i in range(3):
             reshape_tonemap_img_8bit[i, :, :] = tonemap_img_8bit[:, :, i]
 

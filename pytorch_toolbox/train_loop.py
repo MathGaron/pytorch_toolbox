@@ -66,13 +66,13 @@ class TrainLoop:
         if backend == "cuda":
             for i in range(len(data)):
                 data[i] = data[i].cuda()
-            # for i in range(len(target)):
-            #     target[i] = target[i].cuda()
+            for i in range(len(target)):
+                target[i] = target[i].cuda()
         else:
             for i in range(len(data)):
                 data[i] = data[i].cpu()
-            # for i in range(len(target)):
-            #     target[i] = target[i].cpu()
+            for i in range(len(target)):
+                target[i] = target[i].cpu()
         return data, target
 
     @staticmethod
@@ -87,8 +87,8 @@ class TrainLoop:
         data_var = []
         for i in range(len(data)):
             data_var.append(torch.autograd.Variable(data[i], volatile=not is_train))
-        # for i in range(len(target)):
-        #     target_var.append(torch.autograd.Variable(target[i], volatile=not is_train))
+        for i in range(len(target)):
+            target_var.append(torch.autograd.Variable(target[i], volatile=not is_train))
         return data_var, target
 
     def predict(self, data_variable):

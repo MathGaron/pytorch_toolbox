@@ -226,13 +226,14 @@ class TrainLoop:
         return dict, self.best_prec1, epoch
 
 
-    def setup_checkpoint(self, load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec):
+    def setup_checkpoint(self, load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec, model_name=[]):
         """
         Function to setup the desired checkpoint to be loaded (if desired)
         """
         assert not (load_best_checkpoint and load_last_checkpoint), 'Choose to load only one model: last or best'
         if load_best_checkpoint or load_last_checkpoint:
-            model_name = 'model_best.pth.tar' if load_best_checkpoint else 'model_last.pth.tar'
+            if model_name == []:
+                model_name = 'model_best.pth.tar' if load_best_checkpoint else 'model_last.pth.tar'
             if os.path.exists(os.path.join(output_path, model_name)):
                 dict, self.best_prec1, epoch_best = self.load_checkpoint(output_path, model_name)
                 if forget_best_prec:

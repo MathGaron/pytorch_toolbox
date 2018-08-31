@@ -4,7 +4,7 @@ import csv
 
 class LoopCallbackBase(object):
     @abc.abstractmethod
-    def batch(self, predictions, network_inputs, targets, is_train=True, tensorboard_logger=None):
+    def batch(self, predictions, network_inputs, targets, info, is_train=True, tensorboard_logger=None):
         """
         Will be called after each minibatches
         :param predictions:

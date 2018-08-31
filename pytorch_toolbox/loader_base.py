@@ -32,7 +32,7 @@ class LoaderBase(Dataset):
         pass
 
     def __getitem__(self, index):
-        data, target = self.from_index(index)
+        data, target, info = self.from_index(index)
         if not isinstance(data, list):
             data = [data]
 
@@ -42,7 +42,7 @@ class LoaderBase(Dataset):
         for i, transform in enumerate(self.target_transforms):
             if transform is not None:
                 target[i] = transform(target[i])
-        return data, target
+        return data, target, info
 
     def __len__(self):
         return len(self.imgs)

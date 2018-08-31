@@ -132,7 +132,7 @@ class TrainLoop:
 
         self.model.train()
 
-        for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
+        for i, (data, target, info) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target, is_train=True)
@@ -140,11 +140,12 @@ class TrainLoop:
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.data[0], data[0].size(0))
 
-            for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, is_train=True, tensorboard_logger=self.tensorboard_logger)
-
             self.optim.zero_grad()
             loss.backward()
+
+            for i, callback in enumerate(self.callbacks):
+                callback.batch(y_pred, data, target, info, is_train=True, tensorboard_logger=self.tensorboard_logger)
+
             if self.gradient_clip:
                 torch.nn.utils.clip_grad_norm(self.model.parameters(), 1)
             self.optim.step()
@@ -164,13 +165,13 @@ class TrainLoop:
         """
         self.model.eval()
 
-        for i, (data, target) in enumerate(self.valid_data):
+        for i, (data, target, info) in enumerate(self.valid_data):
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target, is_train=False)
             y_pred = self.predict(data_var)
 
             for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, is_train=False, tensorboard_logger=self.tensorboard_logger)
+                callback.batch(y_pred, data, target, info, is_train=False, tensorboard_logger=self.tensorboard_logger)
 
 
     def validate(self, epoch):
@@ -190,7 +191,7 @@ class TrainLoop:
         self.model.eval()
 
         end = time.time()
-        for i, (data, target) in enumerate(self.valid_data):
+        for i, (data, target, info) in enumerate(self.valid_data):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target, is_train=False)
@@ -199,7 +200,7 @@ class TrainLoop:
             losses.update(loss.data[0], data[0].size(0))
 
             for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, is_train=False, tensorboard_logger=self.tensorboard_logger)
+                callback.batch(y_pred, data, target, info, is_train=False, tensorboard_logger=self.tensorboard_logger)
 
             batch_time.update(time.time() - end)
             end = time.time()

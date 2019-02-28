@@ -19,7 +19,7 @@ import os
 class TrainLoop:
 
     def __init__(self, model, train_data_loader, valid_data_loader, optimizer, backend, gradient_clip=False,
-                 use_tensorboard=False, tensorboard_log_path="./logs"):
+                 use_tensorboard=False, tensorboard_log_path="./logs", scheduler=None):
         """
         See examples/classification/train.py for usage
 
@@ -37,6 +37,7 @@ class TrainLoop:
         self.gradient_clip = gradient_clip
         self.use_tensorboard = use_tensorboard
         self.tensorboard_logger = None
+        self.scheduler = scheduler
         if self.use_tensorboard:
             from pytorch_toolbox.visualization.tensorboard_logger import TensorboardLogger
             date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -242,7 +243,8 @@ class TrainLoop:
         for epoch in range(epoch_start, epochs_qty):
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
-
+            if self.scheduler:
+                self.scheduler.step()
             train_loss = self.train(epoch + 1)
             val_loss = self.validate(epoch + 1)
 

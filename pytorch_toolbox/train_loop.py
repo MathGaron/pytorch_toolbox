@@ -137,7 +137,7 @@ class TrainLoop:
             data_var, target_var = self.to_autograd(data, target, is_train=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.data[0], data[0].size(0))
+            losses.update(loss.item(), data[0].size(0))
 
             for i, callback in enumerate(self.callbacks):
                 callback.batch(y_pred, data, target, is_train=True, tensorboard_logger=self.tensorboard_logger)

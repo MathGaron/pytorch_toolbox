@@ -85,9 +85,12 @@ class TrainLoop:
         target_var = []
         data_var = []
         for i in range(len(data)):
-            data_var.append(torch.autograd.Variable(data[i], volatile=not is_train))
+            v = torch.autograd.Variable(data[i])
+            data_var.append(v)
         for i in range(len(target)):
-            target_var.append(torch.autograd.Variable(target[i], volatile=not is_train))
+            v = torch.autograd.Variable(target[i])
+            target_var.append(v)
+
         return data_var, target_var
 
     def predict(self, data_variable):
@@ -178,8 +181,9 @@ class TrainLoop:
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
             data_var, target_var = self.to_autograd(data, target, is_train=False)
-            y_pred = self.predict(data_var)
-            loss = self.model.loss(y_pred, target_var)
+            with torch.no_grad():
+                y_pred = self.predict(data_var)
+                loss = self.model.loss(y_pred, target_var)
             losses.update(loss.item(), data[0].size(0))
 
             for i, callback in enumerate(self.callbacks):

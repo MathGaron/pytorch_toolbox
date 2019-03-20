@@ -31,5 +31,5 @@ class TrainingState:
         # Last target given to the network
         self.last_target = None
 
-        # All the network parameters
-        self.model_named_parameters = None
+        # The network being optimized
+        self.model = None

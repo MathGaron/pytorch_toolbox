@@ -49,7 +49,7 @@ class TrainLoop:
         if backend == "cuda":
             self.model = self.model.cuda()
 
-        self.training_state.model_named_parameters = self.model.named_parameters()
+        self.training_state.model = self.model
         self.training_state.training_data_size = len(self.train_data.dataset)
         self.training_state.validation_data_size = len(self.valid_data.dataset)
 

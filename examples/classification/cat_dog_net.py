@@ -29,6 +29,7 @@ class CatDogNet(NetworkBase):
         self.probe_activation["conv3"] = x
         x = self.conv4(x)
         self.probe_activation["conv4"] = x
+
         x = x.view(-1, self.view_size)
         x = self.fc1(x)
         self.probe_activation["lin1"] = x

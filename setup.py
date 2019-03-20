@@ -5,6 +5,7 @@ setup(
     version='0.1dev',
     packages=['pytorch_toolbox',
               'pytorch_toolbox.visualization',
-              'pytorch_toolbox.transformations'],
+              'pytorch_toolbox.transformations',
+              'pytorch_toolbox.modules'],
     requires=['numpy', 'tqdm', 'visdom', 'pyyaml', ]
 )

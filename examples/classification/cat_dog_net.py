@@ -22,13 +22,22 @@ class CatDogNet(NetworkBase):
 
     def forward(self, x):
         x = self.conv1(x)
+        self.probe_activation["conv1"] = x
         x = self.conv2(x)
+        self.probe_activation["conv2"] = x
         x = self.conv3(x)
+        self.probe_activation["conv3"] = x
         x = self.conv4(x)
+        self.probe_activation["conv4"] = x
+
         x = x.view(-1, self.view_size)
         x = self.fc1(x)
+        self.probe_activation["lin1"] = x
         x = self.fc2(x)
-        x = F.log_softmax(x)
+        if self.training:
+            x = F.log_softmax(x)
+        else:
+            x = F.softmax(x)
         return x
 
     def loss(self, predictions, targets):

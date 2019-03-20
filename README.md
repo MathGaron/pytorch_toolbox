@@ -8,7 +8,10 @@ Research tricks :
 
 - I rely heavily on the callback classes to probe information (will be more "natural" in next version) during the training. With python being dynamic, it is easy to "hack" stuff without having to change the toolbox code...
 
-See the Cat vs Dog [example](https://github.com/MathGaron/pytorch_toolbox/tree/develop/examples/classification).
+Cat vs Dog training [example](examples/classification).
+
+Network probing [example](examples/probe).
+-   Example code to compare activations or latent vectors
 
 ## Code example:
 

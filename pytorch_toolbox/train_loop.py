@@ -248,8 +248,6 @@ class TrainLoop:
         for epoch in range(epoch_start, epochs_qty):
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
-            if self.scheduler:
-                self.scheduler.step()
             train_loss = self.train(epoch + 1)
             val_loss = self.validate(epoch + 1)
 

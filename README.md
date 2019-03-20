@@ -11,6 +11,7 @@ Research tricks :
 Cat vs Dog training [example](examples/classification).
 
 Network probing [example](examples/probe).
+-   Example code to compare activations or latent vectors
 
 ## Code example:
 

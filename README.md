@@ -1,10 +1,12 @@
 # pytorch_toolbox
 
-General tools for using pytorch :
-- Reduce the need for boilerplate code
-- Visualization tools
+Code to minimize the need to rewrite boilerplate code.
 
-The main goal if this simple package is to remove the boilerplate code needed for training the network and leave flexibility to the user.
+Research tricks : 
+
+- To be able to reproduce my experiments easily, I save (together with the checkpoints) the file containing the network, callback and data loader classes. With this single file and the toolbox installed I can reproduce my experiments anytime without adding thousands of conditions etc.
+
+- I rely heavily on the callback classes to probe information (will be more "natural" in next version) during the training. With python being dynamic, it is easy to "hack" stuff without having to change the toolbox code...
 
 See the Cat vs Dog [example](https://github.com/MathGaron/pytorch_toolbox/tree/develop/examples/classification).
 
@@ -57,3 +59,7 @@ See the Cat vs Dog [example](https://github.com/MathGaron/pytorch_toolbox/tree/d
 
     print("Training Complete")
 ```
+
+## Todo
+- Add tools to probe gradient information
+- Right now there is no simple way to change the gradient descent process. e.g. If you want to train a GAN by steping the generator and then the discriminator, the backprop step is hard coded in the loop...

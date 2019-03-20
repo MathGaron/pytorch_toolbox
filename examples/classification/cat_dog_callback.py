@@ -34,7 +34,7 @@ class CatDogCallback(LoopCallbackBase):
             show_example we send a picture/label to visdom every x iteration
         """
         score, _ = classification_accuracy(predictions[0].data, targets[0], top_k=(1, 1))
-        self.batch_scores.append(score[0])
+        self.batch_scores.append(score.item())
         self.show_example(network_inputs, predictions)
 
     def epoch(self, epoch, loss, data_time, batch_time, is_train=True, tensorboard_logger=None):

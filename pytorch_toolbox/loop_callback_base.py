@@ -1,66 +1,59 @@
 import abc
 import csv
 
+from pytorch_toolbox.train_state import TrainingState
+
 
 class LoopCallbackBase(object):
     @abc.abstractmethod
-    def batch(self, predictions, network_inputs, targets, is_train=True, tensorboard_logger=None):
+    def batch(self, state: TrainingState):
         """
         Will be called after each minibatches
-        :param predictions:
-        :param network_inputs:
-        :param targets:
-        :param is_train:
-        :param tensorboard_logger:
+        :param state:       Contains information of the training state (see in train_loop.py)
         :return:
         """
         pass
 
     @abc.abstractmethod
-    def epoch(self, epoch, loss, data_time, batch_time, is_train=True, tensorboard_logger=None):
+    def epoch(self, state: TrainingState):
         """
         Function called at the end of each epoch.
-        :param epoch:       current epoch
-        :param loss:        average loss
-        :param data_time:   average data load time
-        :param batch_time:  average batch processing time
-        :param is_train:    in training stage or valication stage
-        :param tensorboard_logger: TensorboardLogger from ./visualization
+        :param state:       Contains information of the training state (see in train_loop.py)
         :return:
         """
         pass
 
     @staticmethod
-    def file_print(filename, loss, data_time, batch_time, extra_data):
+    def file_print(filename: str, state: TrainingState, extra_data: list):
         """
         Will print the data in a csv file
-        :param filename:
-        :param loss:
-        :param data_time:
-        :param batch_time:
-        :param extra_data:
+        :param filename:    File name to save
+        :param state:
+        :param extra_data:  Any extra stuff to save
         :return:
         """
         f = open(filename, 'a')
+        loss = state.training_average_loss if state.training_mode else state.validation_average_loss
         try:
             writer = csv.writer(f)
-            writer.writerow([data_time, batch_time, loss] + extra_data)
+            writer.writerow([state.average_data_loading_time, state.average_batch_processing_time, loss] + extra_data)
         finally:
             f.close()
 
     @staticmethod
-    def console_print(loss, data_time, batch_time, extra_data, is_train):
+    def console_print(state: TrainingState, extra_data: list):
         """
         Will make a pretty console print with given information
-        :param loss:        average loss during epoch
-        :param data_time:   average data load time during epoch
-        :param batch_time:  average batch load time during epoch
+        :param state:
         :param extra_data:  list of extra data
-        :param isvalid:
         :return:
         """
-        state = "Train" if is_train else "Valid"
+        mode = "Train" if state.training_mode else "Valid"
+        loss = state.training_average_loss if state.training_mode else state.validation_average_loss
         print(
-            ' {}\t || Loss: {:.3f} | Load Time {:.3f}s | Batch Time {:.3f}s'.format(state, loss, data_time, batch_time))
+            ' {}\t || Loss: {:.3f} | Load Time {:.3f}s | Batch Time {:.3f}s'.format(mode,
+                                                                                    loss,
+                                                                                    state.average_data_loading_time,
+                                                                                    state.average_batch_processing_time))
         for i, acc in enumerate(extra_data):
             print('\t || Acc {}: {:.3f}'.format(i, acc))

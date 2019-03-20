@@ -8,6 +8,7 @@
 """
 import datetime
 
+from pytorch_toolbox.train_state import TrainingState
 from pytorch_toolbox.utils import AverageMeter
 import time
 import torch
@@ -36,17 +37,21 @@ class TrainLoop:
         self.backend = backend
         self.model = model
         self.gradient_clip = gradient_clip
-        self.use_tensorboard = use_tensorboard
         self.tensorboard_logger = None
         self.scheduler = scheduler
-        if self.use_tensorboard:
+        self.training_state = TrainingState()
+        if use_tensorboard:
             from pytorch_toolbox.visualization.tensorboard_logger import TensorboardLogger
             date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-            self.tensorboard_logger = TensorboardLogger(os.path.join(tensorboard_log_path, date_str))
+            self.training_state.tensorboard_logger = TensorboardLogger(os.path.join(tensorboard_log_path, date_str))
 
         self.callbacks = []
         if backend == "cuda":
             self.model = self.model.cuda()
+
+        self.training_state.model_named_parameters = self.model.named_parameters()
+        self.training_state.training_data_size = len(self.train_data.dataset)
+        self.training_state.validation_data_size = len(self.valid_data.dataset)
 
     @staticmethod
     def setup_loaded_data(data, target, backend):
@@ -118,7 +123,7 @@ class TrainLoop:
         else:
             self.callbacks.append(func)
 
-    def train(self, epoch):
+    def train(self):
         """
         Minibatch loop for training. Will iterate through the whole dataset and backprop for every minibatch
 
@@ -143,8 +148,14 @@ class TrainLoop:
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.item(), data[0].size(0))
 
+            self.training_state.last_prediction = y_pred
+            self.training_state.last_target = target
+            self.training_state.last_network_input = data
+            self.training_state.training_mode = True
+            self.training_state.current_batch += 1
+
             for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, is_train=True, tensorboard_logger=self.tensorboard_logger)
+                callback.batch(self.training_state)
 
             [optim.zero_grad() for optim in self.optims]
             loss.backward()
@@ -155,13 +166,15 @@ class TrainLoop:
             batch_time.update(time.time() - end)
             end = time.time()
 
+        self.training_state.training_average_loss = losses.avg
+        self.training_state.average_data_loading_time = data_time.avg
+        self.training_state.average_batch_processing_time = batch_time.avg
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(epoch, losses.avg, data_time.avg, batch_time.avg,
-                           is_train=True, tensorboard_logger=self.tensorboard_logger)
+            callback.epoch(self.training_state)
 
         return losses
 
-    def validate(self, epoch):
+    def validate(self):
         """
         Validation loop (refer to train())
 
@@ -187,14 +200,22 @@ class TrainLoop:
                 loss = self.model.loss(y_pred, target_var)
             losses.update(loss.item(), data[0].size(0))
 
+            self.training_state.last_prediction = y_pred
+            self.training_state.last_target = target
+            self.training_state.last_network_input = data
+            self.training_state.training_mode = False
+
             for i, callback in enumerate(self.callbacks):
-                callback.batch(y_pred, data, target, is_train=False, tensorboard_logger=self.tensorboard_logger)
+                callback.batch(self.training_state)
 
             batch_time.update(time.time() - end)
             end = time.time()
 
+        self.training_state.validation_average_loss = losses.avg
+        self.training_state.average_data_loading_time = data_time.avg
+        self.training_state.average_batch_processing_time = batch_time.avg
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(epoch, losses.avg, data_time.avg, batch_time.avg, is_train=False, tensorboard_logger=self.tensorboard_logger)
+            callback.epoch(self.training_state)
 
         return losses
 
@@ -248,30 +269,31 @@ class TrainLoop:
         for epoch in range(epoch_start, epochs_qty):
             print("-" * 20)
             print(" * EPOCH : {}".format(epoch))
-            train_loss = self.train(epoch + 1)
-            val_loss = self.validate(epoch + 1)
+
+            self.training_state.current_epoch = epoch
+
+            train_loss = self.train()
+            val_loss = self.validate()
 
             if self.scheduler is not None:
                 self.scheduler.step() if type(self.scheduler) != torch.optim.lr_scheduler.ReduceLROnPlateau else self.scheduler.step(val_loss.val)
 
-            validation_loss_average = val_loss.avg
-            training_loss_average = train_loss.avg
-
-            if self.tensorboard_logger is not None:
-                self.tensorboard_logger.scalar_summary('loss', training_loss_average, epoch + 1)
-                self.tensorboard_logger.scalar_summary('loss', validation_loss_average, epoch + 1, is_train=False)
-                for tag, value in self.model.named_parameters():
+            # log gradients, loss in tensorboard
+            if self.training_state.tensorboard_logger is not None:
+                self.training_state.tensorboard_logger.scalar_summary('loss', self.training_state.training_average_loss, epoch + 1)
+                self.training_state.tensorboard_logger.scalar_summary('loss', self.training_state.validation_average_loss, epoch + 1, is_train=False)
+                for tag, value in self.training_state.model_named_parameters:
                     tag = tag.replace('.', '/')
-                    self.tensorboard_logger.histo_summary(tag, self.to_np(value), epoch + 1)
+                    self.training_state.tensorboard_logger.histo_summary(tag, self.to_np(value), epoch + 1)
                     try:
-                        self.tensorboard_logger.histo_summary(tag + '/grad', self.to_np(value.grad), epoch + 1)
+                        self.training_state.tensorboard_logger.histo_summary(tag + '/grad', self.to_np(value.grad), epoch + 1)
                     except AttributeError:
                         print('None grad:', tag, value.shape)
-                        self.tensorboard_logger.histo_summary(tag + '/grad', np.asarray([0]), epoch + 1)
+                        self.training_state.tensorboard_logger.histo_summary(tag + '/grad', np.asarray([0]), epoch + 1)
 
             # remember best loss and save checkpoint
-            is_best = validation_loss_average < best_prec1
-            best_prec1 = min(validation_loss_average, best_prec1)
+            is_best = self.training_state.validation_average_loss < best_prec1
+            best_prec1 = min(self.training_state.validation_average_loss, best_prec1)
             checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
             if save_all_checkpoints:
                 torch.save(checkpoint_data, os.path.join(output_path, "checkpoint{}.pth.tar".format(epoch)))

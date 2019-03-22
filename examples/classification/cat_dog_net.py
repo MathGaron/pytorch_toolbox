@@ -3,6 +3,7 @@ import torch.nn as nn
 from pytorch_toolbox.network_base import NetworkBase
 from pytorch_toolbox.modules.conv2d_module import ConvBlock
 from pytorch_toolbox.modules.fc_module import FCBlock
+import torch
 
 
 class CatDogNet(NetworkBase):
@@ -19,6 +20,7 @@ class CatDogNet(NetworkBase):
         self.fc2 = FCBlock(250, 2, dropout=False, batchnorm=False, activation=None)
 
         self.criterion = nn.NLLLoss()
+        self.hook_fc1 = self.hook_generator(lambda x: float(torch.sqrt(torch.sum(x ** 2))), "fc1")
 
     def forward(self, x):
         x = self.conv1(x)
@@ -32,7 +34,8 @@ class CatDogNet(NetworkBase):
 
         x = x.view(-1, self.view_size)
         x = self.fc1(x)
-        self.probe_activation["lin1"] = x
+        self.probe_activation["fc1"] = x
+        x.register_hook(self.hook_fc1)
         x = self.fc2(x)
         if self.training:
             x = F.log_softmax(x)

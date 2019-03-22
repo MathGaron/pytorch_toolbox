@@ -282,7 +282,7 @@ class TrainLoop:
             if self.training_state.tensorboard_logger is not None:
                 self.training_state.tensorboard_logger.scalar_summary('loss', self.training_state.training_average_loss, epoch + 1)
                 self.training_state.tensorboard_logger.scalar_summary('loss', self.training_state.validation_average_loss, epoch + 1, is_train=False)
-                for tag, value in self.training_state.model_named_parameters:
+                for tag, value in self.training_state.model.named_parameters():
                     tag = tag.replace('.', '/')
                     self.training_state.tensorboard_logger.histo_summary(tag, self.to_np(value), epoch + 1)
                     try:

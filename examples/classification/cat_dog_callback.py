@@ -34,6 +34,10 @@ class CatDogCallback(LoopCallbackBase):
 
             show_example we send a picture/label to visdom every x iteration
         """
+        # At every 10 minibatch, log the gradient going in the fc1 layer
+        if state.current_batch % 10:
+            grad_log = state.model.grad_data["fc1"]
+
         score, _ = classification_accuracy(state.last_prediction[0].data, state.last_target[0], top_k=(1, 1))
         self.batch_scores.append(score.item())
         self.show_example(state.last_network_input, state.last_prediction)

@@ -10,6 +10,7 @@ class NetworkBase(nn.Module):
     def __init__(self):
         super(NetworkBase, self).__init__()
         self.probe_activation = collections.OrderedDict()
+        self.grad_data = collections.OrderedDict()
 
     def load_activations(self):
         """
@@ -31,6 +32,19 @@ class NetworkBase(nn.Module):
     def load(self, path):
         checkpoint = torch.load(path, map_location=lambda storage, loc: storage)
         self.load_state_dict(checkpoint['state_dict'])
+
+    def hook_generator(self, func, name):
+        """
+        Will generate a hook that will apply "func" to the gradient and save it in self.grad_data[name]
+        :param func:
+        :param name: name where to put the gradient
+        :return:
+        """
+        def hook(grad):
+            self.grad_data[name] = func(grad)
+
+        self.grad_data[name] = 0
+        return hook
 
     @abstractmethod
     def forward(self, x):

@@ -33,7 +33,6 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--batchsize', help="Size of minibatch", action="store", default=64, type=int)
     parser.add_argument('--tensorboard', help="Size of minibatch", action="store_true")
     parser.add_argument('--tensorboard_path', help="Dataset path", default="./logs")
-
     arguments = parser.parse_args()
 
     data_path = arguments.dataset

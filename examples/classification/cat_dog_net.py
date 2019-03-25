@@ -35,12 +35,13 @@ class CatDogNet(NetworkBase):
         x = x.view(-1, self.view_size)
         x = self.fc1(x)
         self.probe_activation["fc1"] = x
-        x.register_hook(self.hook_fc1)
+        if self.training:
+            x.register_hook(self.hook_fc1)
         x = self.fc2(x)
         if self.training:
-            x = F.log_softmax(x)
+            x = F.log_softmax(x, dim=1)
         else:
-            x = F.softmax(x)
+            x = F.softmax(x, dim=1)
         return x
 
     def loss(self, predictions, targets):

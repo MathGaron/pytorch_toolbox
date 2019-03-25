@@ -1,10 +1,31 @@
 import abc
 import csv
+import os
 
+from pytorch_toolbox.logger import Logger
 from pytorch_toolbox.train_state import TrainingState
 
 
 class LoopCallbackBase(object):
+    def __init__(self):
+        self.epoch_training_logger = Logger()
+        self.epoch_validation_logger = Logger()
+        self.batch_logger = Logger()
+
+    def epoch_(self, state):
+        # update the epoch logs
+        batch_average = self.batch_logger.get_averages()
+        if state.training_mode:
+            self.epoch_training_logger.set_dict(batch_average)
+        else:
+            self.epoch_validation_logger.set_dict(batch_average)
+
+        self.epoch(state)
+        self.batch_logger.reset()
+
+    def batch_(self, state):
+        self.batch(state)
+
     @abc.abstractmethod
     def batch(self, state: TrainingState):
         """
@@ -23,25 +44,31 @@ class LoopCallbackBase(object):
         """
         pass
 
-    @staticmethod
-    def file_print(filename: str, state: TrainingState, extra_data: list):
+    def save_epoch_data(self, path: str, state: TrainingState):
         """
-        Will print the data in a csv file
-        :param filename:    File name to save
+        Will add some state information to the logger before saving it
+        :param path:
         :param state:
-        :param extra_data:  Any extra stuff to save
         :return:
         """
-        f = open(filename, 'a')
-        loss = state.training_average_loss if state.training_mode else state.validation_average_loss
-        try:
-            writer = csv.writer(f)
-            writer.writerow([state.average_data_loading_time, state.average_batch_processing_time, loss] + extra_data)
-        finally:
-            f.close()
+        if state.training_mode:
+            string = "training"
+            logger = self.epoch_training_logger
+            loss = state.training_average_loss
+        else:
+            string = "validation"
+            logger = self.epoch_validation_logger
+            loss = state.validation_average_loss
 
-    @staticmethod
-    def console_print(state: TrainingState, extra_data: list):
+        filename = "{}_data.log".format(string)
+        file_path = os.path.join(path, filename)
+
+        logger["Loss"] = loss
+        logger["Load Time"] = state.average_data_loading_time
+        logger["Process Time"] = state.average_batch_processing_time
+        logger.save(file_path)
+
+    def print_batch_data(self, state: TrainingState):
         """
         Will make a pretty console print with given information
         :param state:
@@ -55,5 +82,8 @@ class LoopCallbackBase(object):
                                                                                     loss,
                                                                                     state.average_data_loading_time,
                                                                                     state.average_batch_processing_time))
-        for i, acc in enumerate(extra_data):
-            print('\t || Acc {}: {:.3f}'.format(i, acc))
+
+
+        batch_average = self.batch_logger.get_averages()
+        for label, acc in batch_average.items():
+                    print('\t\t || {} : {:.3f}'.format(label, acc))

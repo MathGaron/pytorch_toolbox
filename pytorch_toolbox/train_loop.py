@@ -155,7 +155,7 @@ class TrainLoop:
             self.training_state.current_batch += 1
 
             for i, callback in enumerate(self.callbacks):
-                callback.batch(self.training_state)
+                callback.batch_(self.training_state)
 
             [optim.zero_grad() for optim in self.optims]
             loss.backward()
@@ -170,7 +170,7 @@ class TrainLoop:
         self.training_state.average_data_loading_time = data_time.avg
         self.training_state.average_batch_processing_time = batch_time.avg
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(self.training_state)
+            callback.epoch_(self.training_state)
 
         return losses
 
@@ -206,7 +206,7 @@ class TrainLoop:
             self.training_state.training_mode = False
 
             for i, callback in enumerate(self.callbacks):
-                callback.batch(self.training_state)
+                callback.batch_(self.training_state)
 
             batch_time.update(time.time() - end)
             end = time.time()
@@ -215,7 +215,7 @@ class TrainLoop:
         self.training_state.average_data_loading_time = data_time.avg
         self.training_state.average_batch_processing_time = batch_time.avg
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(self.training_state)
+            callback.epoch_(self.training_state)
 
         return losses
 

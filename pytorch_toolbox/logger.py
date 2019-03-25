@@ -14,7 +14,7 @@ class Logger():
         """
         if key not in self.logs:
             self.logs[key] = []
-        self.logs[key].append(item)
+        self.logs[key].append(float(item))
 
     def __getitem__(self, key):
         """
@@ -23,6 +23,9 @@ class Logger():
         :return:
         """
         return self.logs[key]
+
+    def keys(self):
+        return self.logs.keys()
 
     def set_dict(self, data):
         for key, value in data.items():

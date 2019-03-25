@@ -3,7 +3,7 @@
     This module provide simple functions and class for general use.
 
 """
-
+import torch
 IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP']
 
 
@@ -43,7 +43,7 @@ def classification_accuracy(prediction, target, top_k=(1,)):
     """
     maxk = max(top_k)
     batch_size = target.size(0)
-
+    prediction = torch.exp(prediction)
     _, pred = prediction.topk(maxk, 1, True, True)
     pred = pred.t()
     correct = pred.eq(target.view(1, -1).expand_as(pred))

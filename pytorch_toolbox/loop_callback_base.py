@@ -12,18 +12,22 @@ class LoopCallbackBase(object):
         self.epoch_validation_logger = Logger()
         self.batch_logger = Logger()
 
-    def epoch_(self, state):
+    def epoch_(self, state: TrainingState):
         # update the epoch logs
         batch_average = self.batch_logger.get_averages()
         if state.training_mode:
             self.epoch_training_logger.set_dict(batch_average)
+            self.epoch_training_logger["Loss"] = state.training_average_loss
         else:
             self.epoch_validation_logger.set_dict(batch_average)
+            self.epoch_validation_logger["Loss"] = state.training_average_loss
 
+        self.epoch_training_logger["Process Time"] = state.average_batch_processing_time
+        self.epoch_training_logger["Load Time"] = state.average_data_loading_time
         self.epoch(state)
         self.batch_logger.reset()
 
-    def batch_(self, state):
+    def batch_(self, state: TrainingState):
         self.batch(state)
 
     @abc.abstractmethod
@@ -54,25 +58,19 @@ class LoopCallbackBase(object):
         if state.training_mode:
             string = "training"
             logger = self.epoch_training_logger
-            loss = state.training_average_loss
         else:
             string = "validation"
             logger = self.epoch_validation_logger
-            loss = state.validation_average_loss
 
         filename = "{}_data.log".format(string)
         file_path = os.path.join(path, filename)
-
-        logger["Loss"] = loss
-        logger["Load Time"] = state.average_data_loading_time
-        logger["Process Time"] = state.average_batch_processing_time
         logger.save(file_path)
 
-    def print_batch_data(self, state: TrainingState):
+    def print_batch_data(self, state: TrainingState, order=None):
         """
         Will make a pretty console print with given information
         :param state:
-        :param extra_data:  list of extra data
+        :param order:  list of string containing the label of the data to show as extra. None will print them all
         :return:
         """
         mode = "Train" if state.training_mode else "Valid"
@@ -82,8 +80,9 @@ class LoopCallbackBase(object):
                                                                                     loss,
                                                                                     state.average_data_loading_time,
                                                                                     state.average_batch_processing_time))
-
-
         batch_average = self.batch_logger.get_averages()
-        for label, acc in batch_average.items():
-                    print('\t\t || {} : {:.3f}'.format(label, acc))
+        labels = batch_average.keys()
+        if order is not None:
+            labels = order
+        for label in labels:
+            print('\t\t || {} : {:.3f}'.format(label, batch_average[label]))

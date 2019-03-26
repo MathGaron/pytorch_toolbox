@@ -28,8 +28,6 @@ class CatDogCallback(LoopCallbackBase):
         """
             We have access to the network input/output and the ground truth for each minibatches, in the cat vs dog
             case we compute and keep the classification accuracy on the batch. (will use it in epoch callback)
-
-            show_example we send a picture/label to visdom every x iteration
         """
         # At every 10 minibatch, log the gradient going in the fc1 layer
         if state.current_batch % 10:

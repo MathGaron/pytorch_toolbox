@@ -4,11 +4,15 @@ import matplotlib.pyplot as plt
 
 sns.set_style("whitegrid")
 
-def train_plot(training_logger, validation_logger):
+
+def train_plot(training_logger, validation_logger, order=None):
 
     keys = list(training_logger.keys())
     keys.remove("Process Time")
     keys.remove("Load Time")
+
+    if order is not None:
+        keys = order
 
     for i, key in enumerate(keys):
         plt.subplot(len(keys), 1, i+1)

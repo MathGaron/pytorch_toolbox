@@ -146,7 +146,7 @@ class TrainLoop:
             data_var, target_var = self.to_autograd(data, target, is_train=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.item(), data[0].size(0))
+            losses.update(loss.item())
 
             self.training_state.last_prediction = y_pred
             self.training_state.last_target = target
@@ -187,7 +187,6 @@ class TrainLoop:
         batch_time = AverageMeter()
         data_time = AverageMeter()
         losses = AverageMeter()
-
         self.model.eval()
 
         end = time.time()
@@ -198,7 +197,7 @@ class TrainLoop:
             with torch.no_grad():
                 y_pred = self.predict(data_var)
                 loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.item(), data[0].size(0))
+            losses.update(loss.item())
 
             self.training_state.last_prediction = y_pred
             self.training_state.last_target = target
@@ -210,7 +209,6 @@ class TrainLoop:
 
             batch_time.update(time.time() - end)
             end = time.time()
-
         self.training_state.validation_average_loss = losses.avg
         self.training_state.average_data_loading_time = data_time.avg
         self.training_state.average_batch_processing_time = batch_time.avg

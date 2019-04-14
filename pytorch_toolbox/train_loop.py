@@ -138,7 +138,7 @@ class TrainLoop:
             data_var, target_var = self.to_autograd(data, target, is_train=True)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.data[0], data[0].size(0))
+            losses.update(loss.data.item(), data[0].size(0))
 
             self.optim.zero_grad()
             loss.backward()

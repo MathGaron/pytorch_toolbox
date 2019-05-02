@@ -173,7 +173,6 @@ class TrainLoop:
             for i, callback in enumerate(self.callbacks):
                 callback.batch(y_pred, data, target, info, is_train=False, tensorboard_logger=self.tensorboard_logger)
 
-
     def validate(self, epoch):
         """
         Validation loop (refer to train())
@@ -197,7 +196,7 @@ class TrainLoop:
             data_var, target_var = self.to_autograd(data, target, is_train=False)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.data[0], data[0].size(0))
+            losses.update(loss.data.item(), data[0].size(0))
 
             for i, callback in enumerate(self.callbacks):
                 callback.batch(y_pred, data, target, info, is_train=False, tensorboard_logger=self.tensorboard_logger)
@@ -206,7 +205,8 @@ class TrainLoop:
             end = time.time()
 
         for i, callback in enumerate(self.callbacks):
-            callback.epoch(epoch, losses.avg, data_time.avg, batch_time.avg, is_train=False, tensorboard_logger=self.tensorboard_logger)
+            callback.epoch(epoch, losses.avg, data_time.avg, batch_time.avg, is_train=False,
+                           tensorboard_logger=self.tensorboard_logger)
 
         return losses
 
@@ -226,8 +226,8 @@ class TrainLoop:
         epoch = state['epoch'] - 1
         return dict, self.best_prec1, epoch
 
-
-    def setup_checkpoint(self, load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec, model_name=[]):
+    def setup_checkpoint(self, load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec,
+                         model_name=[]):
         """
         Function to setup the desired checkpoint to be loaded (if desired)
         """
@@ -246,13 +246,8 @@ class TrainLoop:
             else:
                 raise RuntimeError("Can't load model {}".format(os.path.join(output_path, model_name)))
 
-    def loop(self, epochs_qty, output_path,
-             load_best_checkpoint=False,
-             load_last_checkpoint=False,
-             save_best_checkpoint=True,
-             save_last_checkpoint=True,
-             save_all_checkpoints=True,
-             forget_best_prec=False):
+    def loop(self, epochs_qty, output_path, load_best_checkpoint=False, load_last_checkpoint=False,
+             save_best_checkpoint=True, save_last_checkpoint=True, save_all_checkpoints=True, forget_best_prec=False):
         """
         Training loop for n epoch.
         todo : Use callback instead of hardcoded savetxt to leave the user choise on results handling
@@ -263,7 +258,6 @@ class TrainLoop:
         :param output_path:           Path to save the model and log data
         :return:
         """
-
 
         self.setup_checkpoint(load_best_checkpoint, load_last_checkpoint, output_path, forget_best_prec)
 
@@ -303,4 +297,3 @@ class TrainLoop:
     @staticmethod
     def to_np(x):
         return x.data.cpu().numpy()
-

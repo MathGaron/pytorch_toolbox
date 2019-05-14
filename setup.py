@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='pytorch_toolbox',
@@ -7,5 +7,5 @@ setup(
               'pytorch_toolbox.visualization',
               'pytorch_toolbox.transformations',
               'pytorch_toolbox.modules'],
-    requires=['numpy', 'tqdm', 'visdom', 'pyyaml', ]
+    install_requires=['numpy', 'tqdm', 'visdom', 'pyyaml', 'scikit-image']
 )

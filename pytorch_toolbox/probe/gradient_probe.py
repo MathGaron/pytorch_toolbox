@@ -12,7 +12,6 @@ Usage:
     fc = gradient_scale(fc, -1)
     output = estimator_layers(fc)
   Afterwards, we can plot these records to check the gradient.  
-
 '''
 import torch
 
@@ -25,8 +24,6 @@ class GradientScaleFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grads):
-         # for debug
-        # print('[min, mean, max]=[%.15f %.15f %.15f]' % (grads.min(), grads.mean(), grads.max()))
         lambda_ = ctx.lambda_
         lambda_ = grads.new_tensor(lambda_)
         dx = lambda_ * grads

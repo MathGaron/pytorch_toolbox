@@ -61,12 +61,13 @@ class VisdomLogger:
     @classmethod
     def update_item(cls, item, name, **args):
         if isinstance(item, numbers.Number):
-            cls.vis.updateTrace(
+            cls.vis.line(
                 # to plot the number we need to give its position in the x axis hence we keep track of how many times we
                 # updates this item (stored in items_iterator)
                 X=np.array([cls.items_iterator[name]]),
                 Y=np.array([item]),
                 win=cls.windows[name],
+                update='append'
             )
             cls.items_iterator[name] += 1
         elif isinstance(item, np.ndarray):

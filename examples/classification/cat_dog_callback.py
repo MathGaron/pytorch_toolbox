@@ -9,7 +9,7 @@ class CatDogCallback(LoopCallbackBase):
     """
     Here we define how we handle data during training : visualize, save, etc...
     """
-    def __init__(self, update_rate, idx_to_class, file_output_path, reset_files=True):
+    def __init__(self, file_output_path, reset_files=True):
         """
         In init we can keep persistent data and pass information from the user.
         For example, we handle how we rewrite the log file if needed.
@@ -17,6 +17,7 @@ class CatDogCallback(LoopCallbackBase):
         super().__init__()
         self.file_output_path = file_output_path
         if reset_files:
+            self.output_path = file_output_path
             train_path = os.path.join(self.file_output_path, "training_data.csv")
             valid_path = os.path.join(self.file_output_path, "validation_data.csv")
             if os.path.exists(train_path):
@@ -46,5 +47,5 @@ class CatDogCallback(LoopCallbackBase):
             log in file
         """
         self.print_batch_data(state)
-        self.save_epoch_data("", state)
+        self.save_epoch_data(self.output_path, state)
 

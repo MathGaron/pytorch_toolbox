@@ -10,11 +10,14 @@ import datetime
 
 from pytorch_toolbox.train_state import TrainingState
 from pytorch_toolbox.utils import AverageMeter
+from importlib._bootstrap_external import SourceFileLoader
 import time
 import torch
 from tqdm import tqdm
 import numpy as np
 import os
+import inspect
+from shutil import copyfile
 
 
 class TrainLoop:
@@ -52,6 +55,36 @@ class TrainLoop:
         self.training_state.model = self.model
         self.training_state.training_data_size = len(self.train_data.dataset)
         self.training_state.validation_data_size = len(self.valid_data.dataset)
+
+    @staticmethod
+    def load_from_output_directory(output_path, checkpoint_name="model_best.pth.tar"):
+        """
+        Will import the network and the loader module saved durint a previous training. The loading is dynamic so no
+        need to know the name of the Classes
+        :param output_path:
+        :param checkpoint_name:
+        :return:
+        """
+
+        checkpoint_state = torch.load(os.path.join(output_path, checkpoint_name))
+        weights = checkpoint_state['state_dict']
+        network_class = checkpoint_state['network_class']
+        loader_class = checkpoint_state['loader_class']
+
+        network_path = os.path.join(output_path, "network.py")
+        module = network_path.split("/")[-1].split(".")[0]
+        network_module = SourceFileLoader(module, network_path).load_module()
+        model = getattr(network_module, network_class)()
+        model.eval()
+
+        model.load_state_dict(weights)
+
+        network_path = os.path.join(output_path, "loader.py")
+        module = network_path.split("/")[-1].split(".")[0]
+        loader_module = SourceFileLoader(module, network_path).load_module()
+        loader_class = getattr(loader_module, loader_class)
+
+        return model, loader_class
 
     @staticmethod
     def setup_loaded_data(data, target, backend):
@@ -292,13 +325,20 @@ class TrainLoop:
             # remember best loss and save checkpoint
             is_best = self.training_state.validation_average_loss < best_prec1
             best_prec1 = min(self.training_state.validation_average_loss, best_prec1)
-            checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1}
+            checkpoint_data = {'epoch': epoch, 'state_dict': self.model.state_dict(), 'best_prec1': best_prec1,
+                               'network_class': self.model.__class__.__name__, 'loader_class': self.train_data.dataset.__class__.__name__}
             if save_all_checkpoints:
                 torch.save(checkpoint_data, os.path.join(output_path, "checkpoint{}.pth.tar".format(epoch)))
             if save_best_checkpoint and is_best:
                 torch.save(checkpoint_data, os.path.join(output_path, "model_best.pth.tar"))
             if save_last_checkpoint:
                 torch.save(checkpoint_data, os.path.join(output_path, "model_last.pth.tar"))
+
+            # save source file for evaluation
+            network_file_path = inspect.getfile(self.model.__class__)
+            copyfile(network_file_path, os.path.join(output_path, "network.py"))
+            loader_file_path = inspect.getfile(self.train_data.dataset.__class__)
+            copyfile(loader_file_path, os.path.join(output_path, "loader.py"))
 
     @staticmethod
     def to_np(x):

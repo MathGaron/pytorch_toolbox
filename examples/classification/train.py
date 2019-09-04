@@ -97,7 +97,7 @@ if __name__ == '__main__':
     train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend, gradient_clip,
                                    use_tensorboard=use_tensorboard, tensorboard_log_path=tensorboard_path)
     # We can add any number of callbacks to handle data during training
-    train_loop_handler.add_callback([CatDogCallback(10, train_dataset.idx_to_class, output_path, reset_files=not load_best)])
+    train_loop_handler.add_callback([CatDogCallback(output_path, reset_files=not load_best)])
     train_loop_handler.loop(epochs, output_path, load_best_checkpoint=load_best)
 
     print("Training Complete")

@@ -2,6 +2,8 @@ import argparse
 import os
 from multiprocessing import cpu_count
 
+from pytorch_toolbox import io
+from pytorch_toolbox.logger import Logger
 from torch import optim
 from torch.utils import data
 
@@ -32,7 +34,6 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--backend', help="backend : cuda | cpu", action="store", default="cuda")
     parser.add_argument('-s', '--batchsize', help="Size of minibatch", action="store", default=64, type=int)
     parser.add_argument('--tensorboard', help="Size of minibatch", action="store_true")
-    parser.add_argument('--tensorboard_path', help="Dataset path", default="./logs")
     arguments = parser.parse_args()
 
     data_path = arguments.dataset
@@ -46,7 +47,9 @@ if __name__ == '__main__':
     load_best = arguments.loadbest
     gradient_clip = arguments.gradientclip
     use_tensorboard = arguments.tensorboard
-    tensorboard_path = arguments.tensorboard_path
+
+    # Here we can save the provided arguments
+    io.yaml_dump(os.path.join(output_path, "arguments.yml"), vars(arguments))
 
     if number_of_core == -1:
         number_of_core = cpu_count()
@@ -95,7 +98,7 @@ if __name__ == '__main__':
 
     # Instantiate the train loop and train the model.
     train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend, gradient_clip,
-                                   use_tensorboard=use_tensorboard, tensorboard_log_path=tensorboard_path)
+                                   use_tensorboard=use_tensorboard, tensorboard_log_path=os.path.join(output_path, "tensorboard"))
     # We can add any number of callbacks to handle data during training
     train_loop_handler.add_callback([CatDogCallback(output_path, reset_files=not load_best)])
     train_loop_handler.loop(epochs, output_path, load_best_checkpoint=load_best)

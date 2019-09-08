@@ -24,7 +24,11 @@ handler.add_callback([callbacks])
 handler.loop(params)
 ```
 
-Cat vs Dog training [example](examples/classification).
+For a full examples see the [Cat vs Dog](https://github.com/MathGaron/pytorch_toolbox/blob/develop/examples/classification/train.py) example.
 
-Network probing [example](examples/probe).
--   Example code to compare activations or latent vectors
+The main motivation for this package is research, it is thus necessary that the user can:
+* Setup an experiment as quickly as possible;
+* Manage easily a large amount of experiments;
+* Have flexibility while implementing ideas.
+
+Implementation speed is partly provided with the boilerplate code removal : a new experiment is basically created by writing 3 files : Network, Data, Callback. Also a set of parameters is usually needed (e.g. batch size, number of epoch etc.). This also help to manage experimentation more easily, e.g. if an experiment is defined by its 3 files, keeping them will ensure that the experiment can be rerun anytime (as long as pytorch_toolbox has the same version). Finally, the callback system is there to make it possible for the user to execute code during the training (e.g. logging information, processing some metrics, etc.)

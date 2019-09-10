@@ -1,68 +1,34 @@
 # pytorch_toolbox
 
-Code to minimize the need to rewrite boilerplate code.
+For a full documentation, check the [wiki page](https://github.com/MathGaron/pytorch_toolbox/wiki)
 
-Research tricks : 
-
-- To be able to reproduce my experiments easily, I save (together with the checkpoints) the file containing the network, callback and data loader classes. With this single file and the toolbox installed I can reproduce my experiments anytime without adding thousands of conditions etc.
-
-- I rely heavily on the callback classes to probe information (will be more "natural" in next version) during the training. With python being dynamic, it is easy to "hack" stuff without having to change the toolbox code...
-
-Cat vs Dog training [example](examples/classification).
-
-Network probing [example](examples/probe).
--   Example code to compare activations or latent vectors
-
-## Code example:
-
+The base usage of pytorch_toolbox is to provide minimalist code to run deep neural network training experiments. To do so, one must **instantiate a Network** architecture, define **how the data is loaded**, and **interact** with the training process. Usually, the user will have to define the main script that will instantiate those three aspects.
+The following pseudocode list the main file structure:
 ```python
-    #
-    #   Instantiate models/loaders/etc.
-    #
-    model = YourNetwork()
-    loader_class = YourDataloader
+# e.g. command line arguments or from a file
+params = load_user_params()
 
-    # Transformation to apply to each inputs
-    transformations = [Compose([Resize((128, 128)),
-                                ToFloat(),
-                                NumpyImage2Tensor(),
-                                Normalize(mean=[123, 116, 103], std=[58, 57, 57])])]
+# The network architecture and loading code are defined as a class
+network = UserNetwork()
+dataset = UserDataset()
+callbacks = UserCallbacks()
 
-    # Optimizer (a list of optimizer can be used)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+# pytorch specific
+data_train_loader = DataLoader(dataset, params)
+data_valid_loader = DataLoader(dataset, params)
+optimizer = optim.Adam(params)
 
-    # Training and validation loaders
-    train_dataset = loader_class(os.path.join(data_path, "train"), transformations)
-    valid_dataset = loader_class(os.path.join(data_path, "valid"), transformations)
-
-    train_loader = data.DataLoader(train_dataset,
-                                   batch_size=batch_size,
-                                   shuffle=True,
-                                   num_workers=number_of_core,
-                                   pin_memory=use_shared_memory,
-                                   drop_last=True,
-                                   )
-
-    val_loader = data.DataLoader(valid_dataset,
-                                 batch_size=batch_size,
-                                 num_workers=number_of_core,
-                                 pin_memory=use_shared_memory,
-                                 )
-
-    # Instantiate the train loop and train the model.
-    train_loop_handler = TrainLoop(model, train_loader, val_loader, optimizer, backend, gradient_clip,
-                                   use_tensorboard=use_tensorboard, tensorboard_log_path=tensorboard_path)
-
-    # We can add any number of callbacks to handle data during training methods of the callback are called at
-    # different moment in the loop : each batch, each epoch
-    train_loop_handler.add_callback([YourCallbacks()])
-
-    # The training loop will optimize the network on the train dataset and run the validation
-    train_loop_handler.loop(epochs, output_path, load_best_checkpoint=load_best)
-
-    print("Training Complete")
+# setup training
+handler = TrainLoop(network, data_train_loader, data_valid_loader, optimizer, params)
+handler.add_callback([callbacks])
+handler.loop(params)
 ```
 
-## Todo
-- Add tools to probe gradient information
-- Right now there is no simple way to change the gradient descent process. e.g. If you want to train a GAN by steping the generator and then the discriminator, the backprop step is hard coded in the loop...
+For a full examples see the [Cat vs Dog](https://github.com/MathGaron/pytorch_toolbox/blob/develop/examples/classification/train.py) example.
+
+The main motivation for this package is research, it is thus necessary that the user can:
+* Setup an experiment as quickly as possible;
+* Manage easily a large amount of experiments;
+* Have flexibility while implementing ideas.
+
+Implementation speed is partly provided with the boilerplate code removal : a new experiment is basically created by writing 3 files : Network, Data, Callback. Also a set of parameters is usually needed (e.g. batch size, number of epoch etc.). This also help to manage experimentation more easily, e.g. if an experiment is defined by its 3 files, keeping them will ensure that the experiment can be rerun anytime (as long as pytorch_toolbox has the same version). Finally, the callback system is there to make it possible for the user to execute code during the training (e.g. logging information, processing some metrics, etc.)

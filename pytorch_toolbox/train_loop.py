@@ -87,6 +87,22 @@ class TrainLoop:
         return model, loader_class
 
     @staticmethod
+    def convert_list_backend(input, backend="cuda"):
+        """
+        Will recursively convert every tensor to the given backend
+        :param input:
+        :return:
+        """
+        for i in range(len(input)):
+            if isinstance(input[i], list):
+                TrainLoop.convert_list_backend(input[i], backend)
+            else:
+                if backend == "cuda":
+                    input[i] = input[i].cuda()
+                else:
+                    input[i] = input[i].cpu()
+
+    @staticmethod
     def setup_loaded_data(data, target, backend):
         """
         Will make sure that the targets are formated as list in the right backend
@@ -100,37 +116,26 @@ class TrainLoop:
 
         if not isinstance(target, list):
             target = [target]
-
-        if backend == "cuda":
-            for i in range(len(data)):
-                data[i] = data[i].cuda()
-            for i in range(len(target)):
-                target[i] = target[i].cuda()
-        else:
-            for i in range(len(data)):
-                data[i] = data[i].cpu()
-            for i in range(len(target)):
-                target[i] = target[i].cpu()
+        TrainLoop.convert_list_backend(data, backend)
+        TrainLoop.convert_list_backend(target, backend)
         return data, target
 
     @staticmethod
-    def to_autograd(data, target, is_train=True):
+    def list_to_autograd(input):
         """
-        Converts data and target to autograd Variable
-        :param data:
-        :param target:
+        Convert a list of Tensor to autograd variables
+        :param input:
         :return:
         """
-        target_var = []
-        data_var = []
-        for i in range(len(data)):
-            v = torch.autograd.Variable(data[i])
-            data_var.append(v)
-        for i in range(len(target)):
-            v = torch.autograd.Variable(target[i])
-            target_var.append(v)
+        ret = []
+        for i in range(len(input)):
+            if isinstance(input[i], list):
+                output = TrainLoop.list_to_autograd(input[i])
+            else:
+                output = torch.autograd.Variable(input[i])
+            ret.append(output)
+        return ret
 
-        return data_var, target_var
 
     def predict(self, data_variable):
         """
@@ -176,7 +181,8 @@ class TrainLoop:
         for i, (data, target) in tqdm(enumerate(self.train_data), total=len(self.train_data)):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, is_train=True)
+            data_var = self.list_to_autograd(data)
+            target_var = self.list_to_autograd(target)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
             losses.update(loss.item())
@@ -226,7 +232,8 @@ class TrainLoop:
         for i, (data, target) in enumerate(self.valid_data):
             data_time.update(time.time() - end)
             data, target = self.setup_loaded_data(data, target, self.backend)
-            data_var, target_var = self.to_autograd(data, target, is_train=False)
+            data_var = self.list_to_autograd(data)
+            target_var = self.list_to_autograd(target)
             with torch.no_grad():
                 y_pred = self.predict(data_var)
                 loss = self.model.loss(y_pred, target_var)

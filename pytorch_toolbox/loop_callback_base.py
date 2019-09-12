@@ -20,7 +20,7 @@ class LoopCallbackBase(object):
             self.epoch_training_logger["Loss"] = state.training_average_loss
         else:
             self.epoch_validation_logger.set_dict(batch_average)
-            self.epoch_validation_logger["Loss"] = state.training_average_loss
+            self.epoch_validation_logger["Loss"] = state.validation_average_loss
 
         self.epoch_training_logger["Process Time"] = state.average_batch_processing_time
         self.epoch_training_logger["Load Time"] = state.average_data_loading_time

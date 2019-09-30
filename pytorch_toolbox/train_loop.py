@@ -57,34 +57,40 @@ class TrainLoop:
         self.training_state.validation_data_size = len(self.valid_data.dataset)
 
     @staticmethod
-    def load_from_output_directory(output_path, checkpoint_name="model_best.pth.tar"):
+    def load_from_output_directory(output_path, checkpoint_name="model_best.pth.tar", **kwargs):
         """
         Will import the network and the loader module saved durint a previous training. The loading is dynamic so no
         need to know the name of the Classes
         :param output_path:
         :param checkpoint_name:
+        :param kwargs: dict containing the model arguments
         :return:
         """
 
+        model = TrainLoop.load_network_from_output_directory(output_path, checkpoint_name, kwargs)
+
+        loader_class = checkpoint_state['loader_class']
+        data_path = os.path.join(output_path, "loader.py")
+        module = data_path.split("/")[-1].split(".")[0]
+        loader_module = SourceFileLoader(module, data_path).load_module()
+        loader_class = getattr(loader_module, loader_class)
+
+        return model, loader_class
+
+    @staticmethod
+    def load_network_from_output_directory(output_path, checkpoint_name="model_best.pth.tar", **kwargs):
         checkpoint_state = torch.load(os.path.join(output_path, checkpoint_name))
         weights = checkpoint_state['state_dict']
         network_class = checkpoint_state['network_class']
-        loader_class = checkpoint_state['loader_class']
 
         network_path = os.path.join(output_path, "network.py")
         module = network_path.split("/")[-1].split(".")[0]
         network_module = SourceFileLoader(module, network_path).load_module()
-        model = getattr(network_module, network_class)()
+        model = getattr(network_module, network_class)(**kwargs)
         model.eval()
 
         model.load_state_dict(weights)
-
-        network_path = os.path.join(output_path, "loader.py")
-        module = network_path.split("/")[-1].split(".")[0]
-        loader_module = SourceFileLoader(module, network_path).load_module()
-        loader_class = getattr(loader_module, loader_class)
-
-        return model, loader_class
+        return model
 
     @staticmethod
     def convert_list_backend(input, backend="cuda"):

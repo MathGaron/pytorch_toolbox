@@ -6,6 +6,7 @@ setup(
     packages=['pytorch_toolbox',
               'pytorch_toolbox.visualization',
               'pytorch_toolbox.transformations',
+              'pytorch_toolbox.probe',
               'pytorch_toolbox.modules'],
     install_requires=['numpy', 'tqdm', 'visdom', 'pyyaml', 'scikit-image']
 )

@@ -61,8 +61,23 @@ class LoopCallbackBase(object):
         else:
             string = "validation"
             logger = self.epoch_validation_logger
+        self.save_data(string, path, logger)
 
-        filename = "{}_data.log".format(string)
+    def save_batch_data(self, path: str):
+        """
+        Will add some state information to the logger before saving it
+        :param path:
+        :param state:
+        :return:
+        """
+        string = "batch"
+        logger = self.batch_logger
+        self.save_data(string, path, logger)
+
+
+    @staticmethod
+    def save_data(prefix, path, logger):
+        filename = "{}_data.log".format(prefix)
         file_path = os.path.join(path, filename)
         logger.save(file_path)
 

@@ -19,9 +19,16 @@ class TrainingState:
         self.training_data_size = 0
         self.validation_data_size = 0
 
-        # Average loss returned by the network on the validation
+        # Dictionary containing all average losses returned
+        # by the network on the validation
+        self.validation_average_losses = {}
+        # Dictionary containing all average losses returned
+        # by the network on the training (average on full epoch)
+        self.training_average_losses = {}
+
+        # Sum of average losses returned by the network on the validation
         self.validation_average_loss = float('Inf')
-        # Average loss returned by the network on the training (average on full epoch)
+        # Sum of average losses returned by the network on the training
         self.training_average_loss = float('Inf')
 
         # Last prediction done by the network

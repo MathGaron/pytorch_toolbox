@@ -167,6 +167,21 @@ class TrainLoop:
         else:
             self.callbacks.append(func)
 
+    @staticmethod
+    def _update_losses(avg_losses, batch_losses):
+        if isinstance(batch_losses, dict):
+            total_loss = 0
+            for k, v in batch_losses.items():
+                avg_loss = avg_losses.get(k, AverageMeter())
+                avg_loss.update(v.item())
+                avg_losses[k] = avg_loss
+                total_loss += v
+        else:
+            total_loss = batch_losses
+        avg_losses["total_loss"].update(total_loss.item())
+
+        return total_loss
+
     def train(self):
         """
         Minibatch loop for training. Will iterate through the whole dataset and backprop for every minibatch
@@ -179,7 +194,7 @@ class TrainLoop:
         """
         batch_time = AverageMeter()
         data_time = AverageMeter()
-        losses = AverageMeter()
+        losses = {"total_loss" : AverageMeter()}
         end = time.time()
 
         self.model.train()
@@ -191,7 +206,7 @@ class TrainLoop:
             target_var = self.list_to_autograd(target)
             y_pred = self.predict(data_var)
             loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.item())
+            loss = self._update_losses(losses, loss)
 
             self.training_state.last_prediction = y_pred
             self.training_state.last_target = target
@@ -211,7 +226,10 @@ class TrainLoop:
             batch_time.update(time.time() - end)
             end = time.time()
 
-        self.training_state.training_average_loss = losses.avg
+        avg_losses = {k : v.avg for k, v in losses.items()}
+        self.training_state.training_average_losses = avg_losses
+
+        self.training_state.training_average_loss = avg_losses['total_loss']
         self.training_state.average_data_loading_time = data_time.avg
         self.training_state.average_batch_processing_time = batch_time.avg
         for i, callback in enumerate(self.callbacks):
@@ -231,7 +249,7 @@ class TrainLoop:
         """
         batch_time = AverageMeter()
         data_time = AverageMeter()
-        losses = AverageMeter()
+        losses = {"total_loss" : AverageMeter()}
         self.model.eval()
 
         end = time.time()
@@ -243,7 +261,7 @@ class TrainLoop:
             with torch.no_grad():
                 y_pred = self.predict(data_var)
                 loss = self.model.loss(y_pred, target_var)
-            losses.update(loss.item())
+            loss = self._update_losses(losses, loss)
 
             self.training_state.last_prediction = y_pred
             self.training_state.last_target = target
@@ -255,7 +273,11 @@ class TrainLoop:
 
             batch_time.update(time.time() - end)
             end = time.time()
-        self.training_state.validation_average_loss = losses.avg
+
+        avg_losses = {k : v.avg for k, v in losses.items()}
+        self.training_state.validation_average_losses = avg_losses
+
+        self.training_state.validation_average_loss = avg_losses['total_loss']
         self.training_state.average_data_loading_time = data_time.avg
         self.training_state.average_batch_processing_time = batch_time.avg
         for i, callback in enumerate(self.callbacks):
